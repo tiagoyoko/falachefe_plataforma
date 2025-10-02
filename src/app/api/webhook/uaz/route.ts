@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
-import { WebhookPayload } from '@/lib/uaz-api/types';
+import { UAZWebhookPayload, UAZMessage, UAZChat } from '@/lib/uaz-api/types';
 
 // Configuração do cliente UAZ
 const uazClient = new UAZClient({
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     console.log('Webhook received - signature validation skipped for testing');
 
     // Parse do payload JSON
-    let payload: any;
+    let payload: UAZWebhookPayload;
     try {
       payload = JSON.parse(rawBody);
     } catch (error) {
@@ -38,8 +38,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Validação básica do payload - estrutura real do UAZAPI
-    if (!payload.EventType || !payload.message) {
-      console.error('Invalid webhook payload structure:', payload);
+    if (!payload.EventType || !payload.message || !payload.chat || !payload.owner) {
+      console.error('Invalid webhook payload structure:', {
+        hasEventType: !!payload.EventType,
+        hasMessage: !!payload.message,
+        hasChat: !!payload.chat,
+        hasOwner: !!payload.owner,
+        payload: payload
+      });
       return NextResponse.json(
         { error: 'Invalid webhook payload structure' },
         { status: 400 }
@@ -109,16 +115,16 @@ export async function GET() {
 /**
  * Processa eventos do webhook baseado no tipo
  */
-async function processWebhookEvent(payload: any): Promise<void> {
-  const { EventType, message, chat } = payload;
+async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
+  const { EventType, message, chat, owner, token } = payload;
 
   switch (EventType) {
     case 'messages':
-      await handleMessageEvent({ message, chat });
+      await handleMessageEvent({ message, chat, owner, token });
       break;
     
     case 'messages_update':
-      await handleMessageUpdateEvent({ message, chat });
+      await handleMessageUpdateEvent({ message, chat, owner, token });
       break;
     
     case 'connection':
@@ -145,20 +151,29 @@ async function processWebhookEvent(payload: any): Promise<void> {
 /**
  * Processa eventos de mensagem
  */
-async function handleMessageEvent(data: any): Promise<void> {
-  const { message, chat } = data;
+async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; owner: string; token: string }): Promise<void> {
+  const { message, chat, owner, token } = data;
   
   console.log('Processing message event:', {
     messageId: message.id,
+    messageIdAlt: message.messageid,
     from: message.sender,
     to: message.chatid,
     type: message.type,
+    messageType: message.messageType,
     content: message.content,
     text: message.text,
     isGroup: message.isGroup,
+    fromMe: message.fromMe,
     timestamp: message.messageTimestamp,
     chatName: chat.name,
+    chatId: chat.id,
     senderName: message.senderName,
+    owner: owner,
+    token: token ? '***' + token.slice(-4) : 'N/A',
+    waChatId: chat.wa_chatid,
+    waName: chat.wa_name,
+    waUnreadCount: chat.wa_unreadCount,
   });
 
   // TODO: Implementar roteamento para orchestrator
@@ -170,11 +185,17 @@ async function handleMessageEvent(data: any): Promise<void> {
 /**
  * Processa atualizações de mensagem
  */
-async function handleMessageUpdateEvent(data: any): Promise<void> {
+async function handleMessageUpdateEvent(data: { message: UAZMessage; chat: UAZChat; owner: string; token: string }): Promise<void> {
+  const { message, chat, owner, token } = data;
+  
   console.log('Processing message update event:', {
-    messageId: data.id,
-    status: data.status,
-    timestamp: data.timestamp,
+    messageId: message.id,
+    messageIdAlt: message.messageid,
+    status: message.status,
+    timestamp: message.messageTimestamp,
+    from: message.sender,
+    chatId: chat.id,
+    owner: owner,
   });
 
   // TODO: Atualizar status da mensagem no banco
@@ -184,11 +205,12 @@ async function handleMessageUpdateEvent(data: any): Promise<void> {
 /**
  * Processa eventos de conexão
  */
-async function handleConnectionEvent(data: any): Promise<void> {
+async function handleConnectionEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing connection event:', {
-    status: data.status,
-    instance: data.instance,
-    timestamp: data.timestamp,
+    eventType: data.EventType,
+    owner: data.owner,
+    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
+    baseUrl: data.BaseUrl,
   });
 
   // TODO: Atualizar status da instância no banco
@@ -198,11 +220,12 @@ async function handleConnectionEvent(data: any): Promise<void> {
 /**
  * Processa eventos de presença
  */
-async function handlePresenceEvent(data: any): Promise<void> {
+async function handlePresenceEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing presence event:', {
-    from: data.from,
-    presence: data.presence,
-    timestamp: data.timestamp,
+    eventType: data.EventType,
+    owner: data.owner,
+    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
+    baseUrl: data.BaseUrl,
   });
 
   // TODO: Atualizar status de presença do usuário
@@ -212,11 +235,12 @@ async function handlePresenceEvent(data: any): Promise<void> {
 /**
  * Processa eventos de contatos
  */
-async function handleContactsEvent(data: any): Promise<void> {
+async function handleContactsEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing contacts event:', {
-    contactId: data.id,
-    name: data.name,
-    timestamp: data.timestamp,
+    eventType: data.EventType,
+    owner: data.owner,
+    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
+    baseUrl: data.BaseUrl,
   });
 
   // TODO: Atualizar informações do contato
@@ -226,12 +250,18 @@ async function handleContactsEvent(data: any): Promise<void> {
 /**
  * Processa eventos de grupos
  */
-async function handleGroupsEvent(data: any): Promise<void> {
+async function handleGroupsEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing groups event:', {
-    groupId: data.id,
-    name: data.name,
-    participants: data.participants?.length || 0,
-    timestamp: data.timestamp,
+    eventType: data.EventType,
+    owner: data.owner,
+    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
+    baseUrl: data.BaseUrl,
+    chat: data.chat ? {
+      id: data.chat.id,
+      name: data.chat.name,
+      isGroup: data.chat.wa_isGroup,
+      participants: data.chat.wa_isGroup ? 'N/A' : 'Not a group',
+    } : 'No chat data',
   });
 
   // TODO: Atualizar informações do grupo
