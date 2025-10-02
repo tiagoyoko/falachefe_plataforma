@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
-import { UAZWebhookPayload, UAZMessage, UAZChat } from '@/lib/uaz-api/types';
+import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 
 // Configuração do cliente UAZ
 const uazClient = new UAZClient({
@@ -11,6 +11,36 @@ const uazClient = new UAZClient({
   webhookSecret: process.env.UAZ_WEBHOOK_SECRET,
   timeout: 30000,
 });
+
+/**
+ * Valida se o payload UAZAPI tem a estrutura correta baseada no tipo de evento
+ */
+function validateUAZPayload(payload: any): payload is UAZWebhookPayload {
+  // Campos obrigatórios para todos os payloads
+  if (!payload.EventType || !payload.owner || !payload.token) {
+    return false;
+  }
+
+  // Validação específica por tipo de evento
+  switch (payload.EventType) {
+    case 'messages':
+    case 'messages_update':
+      return !!(payload.message && payload.chat);
+    
+    case 'presence':
+      return !!(payload.event && payload.type);
+    
+    case 'connection':
+    case 'contacts':
+    case 'groups':
+      // Estes eventos podem ter estruturas mais simples
+      return true;
+    
+    default:
+      // Para eventos desconhecidos, aceitar se tem os campos básicos
+      return true;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,12 +68,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validação básica do payload - estrutura real do UAZAPI
-    if (!payload.EventType || !payload.message || !payload.chat || !payload.owner) {
+    // Diferentes tipos de evento têm estruturas diferentes
+    const isValidPayload = validateUAZPayload(payload);
+    
+    if (!isValidPayload) {
       console.error('Invalid webhook payload structure:', {
         hasEventType: !!payload.EventType,
         hasMessage: !!payload.message,
         hasChat: !!payload.chat,
+        hasEvent: !!payload.event,
         hasOwner: !!payload.owner,
+        eventType: payload.EventType,
         payload: payload
       });
       return NextResponse.json(
@@ -116,15 +151,19 @@ export async function GET() {
  * Processa eventos do webhook baseado no tipo
  */
 async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
-  const { EventType, message, chat, owner, token } = payload;
+  const { EventType, message, chat, event, owner, token } = payload;
 
   switch (EventType) {
     case 'messages':
-      await handleMessageEvent({ message, chat, owner, token });
+      if (message && chat) {
+        await handleMessageEvent({ message, chat, owner, token });
+      }
       break;
     
     case 'messages_update':
-      await handleMessageUpdateEvent({ message, chat, owner, token });
+      if (message && chat) {
+        await handleMessageUpdateEvent({ message, chat, owner, token });
+      }
       break;
     
     case 'connection':
@@ -132,7 +171,9 @@ async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
       break;
     
     case 'presence':
-      await handlePresenceEvent(payload);
+      if (event) {
+        await handlePresenceEvent({ event, owner, token });
+      }
       break;
     
     case 'contacts':
@@ -220,16 +261,28 @@ async function handleConnectionEvent(data: UAZWebhookPayload): Promise<void> {
 /**
  * Processa eventos de presença
  */
-async function handlePresenceEvent(data: UAZWebhookPayload): Promise<void> {
+async function handlePresenceEvent(data: { event: UAZPresenceEvent; owner: string; token: string }): Promise<void> {
+  const { event, owner, token } = data;
+  
   console.log('Processing presence event:', {
-    eventType: data.EventType,
-    owner: data.owner,
-    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
-    baseUrl: data.BaseUrl,
+    chat: event.Chat,
+    sender: event.Sender,
+    isFromMe: event.IsFromMe,
+    isGroup: event.IsGroup,
+    state: event.State,
+    media: event.Media,
+    addressingMode: event.AddressingMode,
+    senderAlt: event.SenderAlt,
+    recipientAlt: event.RecipientAlt,
+    broadcastListOwner: event.BroadcastListOwner,
+    broadcastRecipients: event.BroadcastRecipients,
+    owner: owner,
+    token: token ? '***' + token.slice(-4) : 'N/A',
   });
 
   // TODO: Atualizar status de presença do usuário
   // TODO: Ajustar estratégia de resposta baseada na presença
+  // TODO: Implementar lógica baseada no estado (composing, recording, etc.)
 }
 
 /**

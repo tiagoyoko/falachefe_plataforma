@@ -75,10 +75,26 @@ export interface MessageResponse {
 export interface UAZWebhookPayload {
   BaseUrl: string;
   EventType: string;
-  chat: UAZChat;
-  message: UAZMessage;
+  chat?: UAZChat;
+  message?: UAZMessage;
+  event?: UAZPresenceEvent;
   owner: string;
   token: string;
+  type?: string; // Para eventos de presença
+}
+
+export interface UAZPresenceEvent {
+  Chat: string;
+  Sender: string;
+  IsFromMe: boolean;
+  IsGroup: boolean;
+  AddressingMode: string;
+  SenderAlt: string;
+  RecipientAlt: string;
+  BroadcastListOwner: string;
+  BroadcastRecipients: string[] | null;
+  State: 'composing' | 'recording' | 'paused' | 'available' | 'unavailable';
+  Media: string;
 }
 
 export interface UAZChat {
