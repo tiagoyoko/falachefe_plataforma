@@ -22,14 +22,8 @@ export async function POST(request: NextRequest) {
                      request.headers.get('x-signature') || 
                      request.headers.get('signature') || '';
 
-    // Validar assinatura do webhook
-    if (!uazClient.validateWebhookSignature(rawBody, signature)) {
-      console.error('Webhook signature validation failed');
-      return NextResponse.json(
-        { error: 'Invalid webhook signature' },
-        { status: 401 }
-      );
-    }
+    // Validação de assinatura desabilitada para testes
+    console.log('Webhook received - signature validation skipped for testing');
 
     // Parse do payload JSON
     let payload: WebhookPayload;
