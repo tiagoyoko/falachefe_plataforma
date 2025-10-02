@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validação básica do payload
-    if (!payload.event || !payload.instance || !payload.data) {
+    // Validação básica do payload - estrutura real do UAZAPI
+    if (!payload.EventType || !payload.message) {
       console.error('Invalid webhook payload structure:', payload);
       return NextResponse.json(
         { error: 'Invalid webhook payload structure' },
@@ -48,10 +48,11 @@ export async function POST(request: NextRequest) {
 
     // Log do webhook recebido
     console.log('UAZ Webhook received:', {
-      event: payload.event,
-      instance: payload.instance,
+      eventType: payload.EventType,
+      message: payload.message,
+      chat: payload.chat,
+      owner: payload.owner,
       timestamp: new Date().toISOString(),
-      dataId: payload.data.id,
     });
 
     // Processar webhook baseado no tipo de evento
@@ -108,36 +109,36 @@ export async function GET() {
 /**
  * Processa eventos do webhook baseado no tipo
  */
-async function processWebhookEvent(payload: WebhookPayload): Promise<void> {
-  const { event, data } = payload;
+async function processWebhookEvent(payload: any): Promise<void> {
+  const { EventType, message, chat } = payload;
 
-  switch (event) {
+  switch (EventType) {
     case 'messages':
-      await handleMessageEvent(data);
+      await handleMessageEvent({ message, chat });
       break;
     
     case 'messages_update':
-      await handleMessageUpdateEvent(data);
+      await handleMessageUpdateEvent({ message, chat });
       break;
     
     case 'connection':
-      await handleConnectionEvent(data);
+      await handleConnectionEvent(payload);
       break;
     
     case 'presence':
-      await handlePresenceEvent(data);
+      await handlePresenceEvent(payload);
       break;
     
     case 'contacts':
-      await handleContactsEvent(data);
+      await handleContactsEvent(payload);
       break;
     
     case 'groups':
-      await handleGroupsEvent(data);
+      await handleGroupsEvent(payload);
       break;
     
     default:
-      console.log(`Unhandled webhook event: ${event}`, data);
+      console.log(`Unhandled webhook event: ${EventType}`, payload);
   }
 }
 
@@ -145,14 +146,19 @@ async function processWebhookEvent(payload: WebhookPayload): Promise<void> {
  * Processa eventos de mensagem
  */
 async function handleMessageEvent(data: any): Promise<void> {
+  const { message, chat } = data;
+  
   console.log('Processing message event:', {
-    messageId: data.id,
-    from: data.from,
-    to: data.to,
-    type: data.type,
-    body: data.body?.substring(0, 100) + '...', // Log apenas início da mensagem
-    isGroup: data.isGroup,
-    timestamp: data.timestamp,
+    messageId: message.id,
+    from: message.sender,
+    to: message.chatid,
+    type: message.type,
+    content: message.content,
+    text: message.text,
+    isGroup: message.isGroup,
+    timestamp: message.messageTimestamp,
+    chatName: chat.name,
+    senderName: message.senderName,
   });
 
   // TODO: Implementar roteamento para orchestrator
