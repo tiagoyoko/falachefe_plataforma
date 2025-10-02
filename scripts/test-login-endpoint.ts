@@ -15,6 +15,12 @@ async function testLoginEndpoint() {
   try {
     // Configurar Better Auth
     const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+    if (!connectionString) {
+      console.log("❌ Nenhuma conexão com banco de dados configurada");
+      return;
+    }
+
     const client = postgres(connectionString);
     const db = drizzle(client, { schema: betterAuthSchema });
 

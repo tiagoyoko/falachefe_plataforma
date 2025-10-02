@@ -10,6 +10,12 @@ async function checkBetterAuthTables() {
 
   try {
     const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+
+    if (!connectionString) {
+      console.log("❌ Nenhuma conexão com banco de dados configurada");
+      return;
+    }
+
     const client = postgres(connectionString);
 
     // Verificar se as tabelas existem
@@ -51,7 +57,7 @@ async function checkBetterAuthTables() {
           });
         }
       } catch (error) {
-        console.log(`   ❌ Erro ao verificar tabela ${table}: ${error.message}`);
+        console.log(`   ❌ Erro ao verificar tabela ${table}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -63,7 +69,7 @@ async function checkBetterAuthTables() {
         const count = await client`SELECT COUNT(*) as count FROM ${client(table)}`;
         console.log(`   ${table}: ${count[0].count} registros`);
       } catch (error) {
-        console.log(`   ❌ Erro ao contar ${table}: ${error.message}`);
+        console.log(`   ❌ Erro ao contar ${table}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 

@@ -7,8 +7,9 @@ import { eq } from "drizzle-orm";
 // GET /api/admin/users/[id] - Buscar usuário admin específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Verificar autenticação
     const session = await auth.api.getSession({
@@ -21,7 +22,7 @@ export async function GET(
 
     // TODO: Verificar se o usuário tem permissão ADMIN_USERS_VIEW
 
-    const userId = params.id;
+    const userId = id;
 
     // Buscar usuário admin
     const user = await db
@@ -50,8 +51,9 @@ export async function GET(
 // PUT /api/admin/users/[id] - Atualizar usuário admin
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Verificar autenticação
     const session = await auth.api.getSession({
@@ -64,7 +66,7 @@ export async function PUT(
 
     // TODO: Verificar se o usuário tem permissão ADMIN_USERS_EDIT
 
-    const userId = params.id;
+    const userId = id;
     const body = await request.json();
     const { name, role, isActive } = body;
 
@@ -114,8 +116,9 @@ export async function PUT(
 // DELETE /api/admin/users/[id] - Deletar usuário admin
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // Verificar autenticação
     const session = await auth.api.getSession({
@@ -128,7 +131,7 @@ export async function DELETE(
 
     // TODO: Verificar se o usuário tem permissão ADMIN_USERS_DELETE
 
-    const userId = params.id;
+    const userId = id;
 
     // Verificar se o usuário existe
     const existingUser = await db
