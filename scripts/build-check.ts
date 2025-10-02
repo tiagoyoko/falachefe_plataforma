@@ -39,6 +39,16 @@ async function main() {
   const hasConnection = await checkDatabaseConnection();
 
   if (hasConnection) {
+    const shouldSkipMigration =
+      process.env.SKIP_BUILD_DB_MIGRATE === 'true' ||
+      process.env.VERCEL === '1' ||
+      process.env.NODE_ENV === 'production';
+
+    if (shouldSkipMigration) {
+      console.log('Skipping database migration in build environment');
+      return;
+    }
+
     console.log('Running database migration...');
     execSync('pnpm run db:migrate', { stdio: 'inherit' });
   } else {
