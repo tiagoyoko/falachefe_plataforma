@@ -15,20 +15,27 @@ const uazClient = new UAZClient({
 /**
  * Valida se o payload UAZAPI tem a estrutura correta baseada no tipo de evento
  */
-function validateUAZPayload(payload: any): payload is UAZWebhookPayload {
+function validateUAZPayload(payload: unknown): payload is UAZWebhookPayload {
+  // Verificar se é um objeto
+  if (!payload || typeof payload !== 'object') {
+    return false;
+  }
+
+  const p = payload as Record<string, unknown>;
+
   // Campos obrigatórios para todos os payloads
-  if (!payload.EventType || !payload.owner || !payload.token) {
+  if (!p.EventType || !p.owner || !p.token) {
     return false;
   }
 
   // Validação específica por tipo de evento
-  switch (payload.EventType) {
+  switch (p.EventType) {
     case 'messages':
     case 'messages_update':
-      return !!(payload.message && payload.chat);
+      return !!(p.message && p.chat);
     
     case 'presence':
-      return !!(payload.event && payload.type);
+      return !!(p.event && p.type);
     
     case 'connection':
     case 'contacts':
