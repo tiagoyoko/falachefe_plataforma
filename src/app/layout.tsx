@@ -16,9 +16,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agentic Coding Boilerplate",
+  title: "Falachefe - Plataforma SaaS de Chat Multagente",
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling - perfect for building AI-powered applications and autonomous agents by Leon van Zyl",
+    "Automatize vendas, marketing e suporte com agentes de IA especializados via WhatsApp. Sistema de memória persistente, orquestração inteligente e painel administrativo completo.",
+  keywords: ["WhatsApp", "Chat Multagente", "IA", "Automação", "SaaS", "Agentes Inteligentes"],
+  authors: [{ name: "Falachefe Team" }],
+  openGraph: {
+    title: "Falachefe - Chat Multagente via WhatsApp",
+    description: "Plataforma SaaS para automação de atendimento com agentes de IA especializados",
+    type: "website",
+    locale: "pt_BR",
+  },
 };
 
 export default function RootLayout({
