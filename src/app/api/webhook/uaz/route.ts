@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     console.log('Webhook received - signature validation skipped for testing');
 
     // Parse do payload JSON
-    let payload: WebhookPayload;
+    let payload: any;
     try {
       payload = JSON.parse(rawBody);
     } catch (error) {
