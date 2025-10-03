@@ -26,53 +26,74 @@ export class HealthChecker extends EventEmitter {
   }
 
   async checkHealth(agent: BaseAgent): Promise<boolean> {
-    const agentId = this.getAgentId(agent)
-    const startTime = Date.now()
-
-    try {
-      // Perform health check with timeout
-      const healthResult = await this.performHealthCheck(agent, startTime)
-      
-      // Record health check result
-      this.recordHealthCheck(agentId, healthResult)
-      
-      // Update consecutive counters
-      if (healthResult.isHealthy) {
-        this.consecutiveSuccesses.set(agentId, (this.consecutiveSuccesses.get(agentId) || 0) + 1)
-        this.consecutiveFailures.set(agentId, 0)
-      } else {
-        this.consecutiveFailures.set(agentId, (this.consecutiveFailures.get(agentId) || 0) + 1)
-        this.consecutiveSuccesses.set(agentId, 0)
-      }
-
-      // Emit health check result
-      this.emit('healthCheckCompleted', agentId, healthResult)
-
-      // Check if agent should be marked as healthy/unhealthy
-      this.checkHealthThresholds(agentId, healthResult)
-
-      return healthResult.isHealthy
-
-    } catch (error) {
-      const healthResult: HealthCheckResult = {
-        isHealthy: false,
-        checks: {
-          responseTime: Date.now() - startTime,
-          memoryUsage: 0,
-          load: 0,
-          errors: 1
-        },
-        timestamp: new Date(),
-        details: `Health check failed: ${error}`
-      }
-
-      this.recordHealthCheck(agentId, healthResult)
-      this.consecutiveFailures.set(agentId, (this.consecutiveFailures.get(agentId) || 0) + 1)
-      this.consecutiveSuccesses.set(agentId, 0)
-
-      this.emit('healthCheckFailed', agentId, healthResult)
+    // Handle null/undefined agent
+    if (!agent) {
       return false
     }
+
+    const agentId = this.getAgentId(agent)
+    const startTime = Date.now()
+    const maxRetries = this.config.retries || 0
+
+    let lastError: any
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Perform health check with timeout
+        const healthResult = await this.performHealthCheck(agent, startTime)
+        
+        // Record health check result
+        this.recordHealthCheck(agentId, healthResult)
+        
+        // Update consecutive counters
+        if (healthResult.isHealthy) {
+          this.consecutiveSuccesses.set(agentId, (this.consecutiveSuccesses.get(agentId) || 0) + 1)
+          this.consecutiveFailures.set(agentId, 0)
+        } else {
+          this.consecutiveFailures.set(agentId, (this.consecutiveFailures.get(agentId) || 0) + 1)
+          this.consecutiveSuccesses.set(agentId, 0)
+        }
+
+        // Emit health check result
+        this.emit('healthCheckCompleted', agentId, healthResult)
+
+        // Check if agent should be marked as healthy/unhealthy
+        this.checkHealthThresholds(agentId, healthResult)
+
+        return healthResult.isHealthy
+
+      } catch (error) {
+        lastError = error
+        
+        // If this was the last retry, record the failure
+        if (attempt === maxRetries) {
+          const healthResult: HealthCheckResult = {
+            isHealthy: false,
+            checks: {
+              responseTime: Date.now() - startTime,
+              memoryUsage: 0,
+              load: 0,
+              errors: 1
+            },
+            timestamp: new Date(),
+            details: `Health check failed after ${attempt + 1} attempts: ${error}`
+          }
+
+          this.recordHealthCheck(agentId, healthResult)
+          this.consecutiveFailures.set(agentId, (this.consecutiveFailures.get(agentId) || 0) + 1)
+          this.consecutiveSuccesses.set(agentId, 0)
+
+          this.emit('healthCheckFailed', agentId, healthResult)
+          return false
+        }
+        
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+    }
+
+    return false
   }
 
   async checkHealthBatch(agents: BaseAgent[]): Promise<Map<string, boolean>> {
@@ -100,22 +121,15 @@ export class HealthChecker extends EventEmitter {
     return history.slice(-limit)
   }
 
-  getHealthStatus(agentId: string): 'healthy' | 'unhealthy' | 'unknown' {
+  getHealthStatus(agentId: string): boolean | 'unknown' {
     const history = this.healthHistory.get(agentId)
     if (!history || history.length === 0) {
       return 'unknown'
     }
 
-    const recentResults = history.slice(-this.config.healthyThreshold)
-    const healthyCount = recentResults.filter(result => result.isHealthy).length
-    
-    if (healthyCount >= this.config.healthyThreshold) {
-      return 'healthy'
-    } else if (healthyCount <= this.config.unhealthyThreshold) {
-      return 'unhealthy'
-    } else {
-      return 'unknown'
-    }
+    // Return the most recent health status
+    const latestResult = history[history.length - 1]
+    return latestResult.isHealthy
   }
 
   getConsecutiveFailures(agentId: string): number {
@@ -132,48 +146,16 @@ export class HealthChecker extends EventEmitter {
     this.consecutiveSuccesses.set(agentId, 0)
   }
 
-  getHealthSummary(): HealthSummary {
-    const summary: HealthSummary = {
-      totalAgents: this.healthHistory.size,
-      healthyAgents: 0,
-      unhealthyAgents: 0,
-      unknownAgents: 0,
-      averageResponseTime: 0,
-      totalHealthChecks: 0,
-      failureRate: 0
-    }
-
-    let totalResponseTime = 0
-    let totalChecks = 0
-    let failedChecks = 0
-
+  getHealthSummary(): Record<string, boolean> {
+    const summary: Record<string, boolean> = {}
+    
     for (const [agentId, history] of this.healthHistory) {
-      const status = this.getHealthStatus(agentId)
-      
-      switch (status) {
-        case 'healthy':
-          summary.healthyAgents++
-          break
-        case 'unhealthy':
-          summary.unhealthyAgents++
-          break
-        case 'unknown':
-          summary.unknownAgents++
-          break
-      }
-
-      totalChecks += history.length
-      failedChecks += history.filter(result => !result.isHealthy).length
-      
-      for (const result of history) {
-        totalResponseTime += result.checks.responseTime
+      if (history.length > 0) {
+        const latestResult = history[history.length - 1]
+        summary[agentId] = latestResult.isHealthy
       }
     }
-
-    summary.averageResponseTime = totalChecks > 0 ? totalResponseTime / totalChecks : 0
-    summary.totalHealthChecks = totalChecks
-    summary.failureRate = totalChecks > 0 ? failedChecks / totalChecks : 0
-
+    
     return summary
   }
 

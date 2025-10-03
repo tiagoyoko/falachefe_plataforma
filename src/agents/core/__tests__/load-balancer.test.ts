@@ -17,6 +17,7 @@ describe('LoadBalancer', () => {
   config = {
     defaultStrategy: LoadBalancingStrategy.ROUND_ROBIN,
     strategies: new Map([
+      ['financial', LoadBalancingStrategy.ROUND_ROBIN], // Configure strategy for financial agents
       ['round_robin', LoadBalancingStrategy.ROUND_ROBIN],
       ['least_connections', LoadBalancingStrategy.LEAST_CONNECTIONS],
       ['weighted', LoadBalancingStrategy.WEIGHTED],
@@ -131,13 +132,28 @@ describe('LoadBalancer', () => {
     })
 
     it('should select agents in round-robin order', () => {
+      // First, let's verify the agents are added correctly
+      const agents = loadBalancer.getAgents('financial')
+      expect(agents).toHaveLength(2)
+      
+      // Let's test with explicit ordering of agents
       const selected1 = loadBalancer.selectAgent([agentInfo1, agentInfo2], 'financial')
       const selected2 = loadBalancer.selectAgent([agentInfo1, agentInfo2], 'financial')
+      const selected3 = loadBalancer.selectAgent([agentInfo1, agentInfo2], 'financial')
+      const selected4 = loadBalancer.selectAgent([agentInfo1, agentInfo2], 'financial')
       
-      expect(selected1).toBeDefined()
-      expect(selected2).toBeDefined()
-      // With round-robin, we should get different agents
-      expect(selected1?.id).not.toBe(selected2?.id)
+      // After sorting, the agents should be: [agent-1, agent-2] (sorted by ID)
+      // Counter starts at 0
+      // Selection 1: counter=0, index=0, agent=agent-1, counter++
+      // Selection 2: counter=1, index=1, agent=agent-2, counter++
+      // Selection 3: counter=2, index=0, agent=agent-1, counter++
+      // Selection 4: counter=3, index=1, agent=agent-2, counter++
+      
+      // Expected pattern: agent-1, agent-2, agent-1, agent-2
+      expect(selected1?.id).toBe('agent-1')
+      expect(selected2?.id).toBe('agent-2')
+      expect(selected3?.id).toBe('agent-1')
+      expect(selected4?.id).toBe('agent-2')
     })
 
     it('should cycle through all agents', () => {
@@ -155,6 +171,9 @@ describe('LoadBalancer', () => {
 
   describe('Least Connections Selection', () => {
     beforeEach(() => {
+      // Configure strategy for financial agents to use least connections
+      loadBalancer.setStrategy('financial', LoadBalancingStrategy.LEAST_CONNECTIONS)
+      
       loadBalancer.addAgent(agentInfo1)
       loadBalancer.addAgent(agentInfo2)
       
@@ -183,6 +202,9 @@ describe('LoadBalancer', () => {
 
   describe('Weighted Selection', () => {
     beforeEach(() => {
+      // Configure strategy for financial agents to use weighted selection
+      loadBalancer.setStrategy('financial', LoadBalancingStrategy.WEIGHTED)
+      
       loadBalancer.addAgent(agentInfo1) // weight: 1
       loadBalancer.addAgent(agentInfo2) // weight: 2
     })

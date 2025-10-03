@@ -243,6 +243,7 @@ export interface AgentManagerEvents {
 export interface AgentResponse {
   agentId: string
   response: string
+  intent?: string
   confidence: number
   processingTime: number
   metadata?: Record<string, any>

@@ -35,5 +35,7 @@ module.exports = {
   maxWorkers: 1, // Run tests sequentially to avoid conflicts
   verbose: true,
   detectOpenHandles: true,
-  forceExit: true
+  forceExit: true,
+  silent: false,
+  collectCoverage: false
 }

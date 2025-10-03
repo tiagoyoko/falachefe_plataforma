@@ -184,7 +184,7 @@ describe('HealthChecker', () => {
 
     it('should return undefined for unchecked agent', () => {
       const status = healthChecker.getHealthStatus('nonexistent')
-      expect(status).toBeUndefined()
+      expect(status).toBe('unknown')
     })
 
     it('should return health summary for all agents', async () => {

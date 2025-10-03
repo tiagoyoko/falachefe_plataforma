@@ -17,6 +17,7 @@ export class LoadBalancer extends EventEmitter {
   private agentWeights: Map<string, number>
   private roundRobinCounters: Map<string, number>
   private circuitBreakerStates: Map<string, CircuitBreakerState>
+  private agentRegistry: Map<string, AgentInfo>
   private config: LoadBalancerConfig
 
   constructor(config: LoadBalancerConfig) {
@@ -26,6 +27,7 @@ export class LoadBalancer extends EventEmitter {
     this.agentWeights = new Map()
     this.roundRobinCounters = new Map()
     this.circuitBreakerStates = new Map()
+    this.agentRegistry = new Map()
     
     this.initializeStrategies()
   }
@@ -47,7 +49,11 @@ export class LoadBalancer extends EventEmitter {
   addAgent(agentInfo: AgentInfo): void {
     const weight = agentInfo.metadata.weight || 1
     this.agentWeights.set(agentInfo.id, weight)
-    this.roundRobinCounters.set(agentInfo.id, 0)
+    // Initialize round-robin counter for agent type, not individual agent
+    if (!this.roundRobinCounters.has(agentInfo.type)) {
+      this.roundRobinCounters.set(agentInfo.type, 0)
+    }
+    this.agentRegistry.set(agentInfo.id, agentInfo)
     
     // Initialize circuit breaker state
     this.circuitBreakerStates.set(agentInfo.id, {
@@ -60,14 +66,19 @@ export class LoadBalancer extends EventEmitter {
 
   removeAgent(agentId: string): void {
     this.agentWeights.delete(agentId)
-    this.roundRobinCounters.delete(agentId)
+    // Note: We don't remove roundRobinCounters here as they are per agent type, not per agent
     this.circuitBreakerStates.delete(agentId)
+    this.agentRegistry.delete(agentId)
   }
 
   getAgents(agentType?: string): AgentInfo[] {
-    // This is a simplified implementation since we don't have direct access to agent registry
-    // In a real implementation, this would need access to the agent registry
-    return []
+    const allAgents = Array.from(this.agentRegistry.values())
+    
+    if (!agentType) {
+      return allAgents
+    }
+    
+    return allAgents.filter(agent => agent.type === agentType)
   }
 
   selectAgent(agents: AgentInfo[], agentType: string): AgentInfo | null {
@@ -79,6 +90,11 @@ export class LoadBalancer extends EventEmitter {
     const availableAgents = agents.filter(agent => 
       this.isCircuitBreakerClosed(agent.id)
     )
+    
+    // CRITICAL BUG FOUND! The availableAgents array might be in a different order each time
+    // due to the filter operation. We need to ensure the order is consistent.
+    // Sort by agent ID to ensure consistent ordering
+    availableAgents.sort((a, b) => a.id.localeCompare(b.id))
 
     if (availableAgents.length === 0) {
       this.emit('circuitBreakerOpened', agentType, 'All agents have open circuit breakers')
@@ -131,6 +147,7 @@ export class LoadBalancer extends EventEmitter {
     const selectedIndex = counter % agents.length
     const selectedAgent = agents[selectedIndex]
     
+    // Update counter for next selection
     this.roundRobinCounters.set(agentType, counter + 1)
     
     return selectedAgent

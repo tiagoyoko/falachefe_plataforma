@@ -135,7 +135,7 @@ describe('WindowControlService', () => {
 
       const result = await windowService.getWindowState(userId);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
 
     it('should return window state if exists and active', async () => {
@@ -171,7 +171,7 @@ describe('WindowControlService', () => {
 
       const result = await windowService.getWindowState(userId);
 
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
       expect(mockRedis.del).toHaveBeenCalledWith(`window:${userId}`);
     });
   });

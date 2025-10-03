@@ -393,6 +393,13 @@ export class AgentMetricsCollector extends EventEmitter {
     }, this.config.collectionInterval)
   }
 
+  stopCollection(): void {
+    if (this.collectionInterval) {
+      clearInterval(this.collectionInterval)
+      this.collectionInterval = undefined
+    }
+  }
+
   private collectSystemMetrics(): void {
     // Update uptime for all agents
     for (const [agentId, metrics] of this.metrics) {

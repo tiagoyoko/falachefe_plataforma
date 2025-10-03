@@ -31,6 +31,7 @@ describe('AgentMetricsCollector', () => {
   })
 
   afterEach(() => {
+    metricsCollector.stopCollection()
     metricsCollector.removeAllListeners()
   })
 
