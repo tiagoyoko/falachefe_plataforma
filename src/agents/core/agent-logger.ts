@@ -50,7 +50,7 @@ export class AgentLogger {
       agentId,
       service: this.service,
       action: 'agent_error',
-      error: error.message,
+      error: error,
       stack: error.stack,
       context: this.sanitizeContext(context)
     })
@@ -128,7 +128,7 @@ export class AgentLogger {
       agentId,
       service: this.service,
       action: 'recovery_failed',
-      error: error.message,
+      error: error,
       stack: error.stack
     })
   }
