@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useFullUser } from '@/hooks/use-full-user'
-import { isSuperAdmin } from '@/lib/auth-utils'
+import { useSessionUser } from '@/hooks/use-session-user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,7 +34,7 @@ interface AgentInfo {
 }
 
 export default function PlaygroundPage() {
-  const { user, isPending } = useFullUser()
+  const { user, isPending, isAuthenticated } = useSessionUser()
   const [agents, setAgents] = useState<AgentInfo[]>([])
   const [selectedAgent, setSelectedAgent] = useState<string>('')
   const [testMessage, setTestMessage] = useState('')
@@ -44,9 +43,44 @@ export default function PlaygroundPage() {
   const [tests, setTests] = useState<AgentTest[]>([])
   const [showLogs, setShowLogs] = useState(true)
   const [logs, setLogs] = useState<string[]>([])
+  const [permission, setPermission] = useState<{ isSuperAdmin: boolean; user: any } | null>(null)
+  const [permissionLoading, setPermissionLoading] = useState(true)
+
+  const checkPermission = async () => {
+    try {
+      const response = await fetch('/api/admin/check-permission')
+      if (response.ok) {
+        const data = await response.json()
+        setPermission(data)
+      } else {
+        setPermission({ isSuperAdmin: false, user: null })
+      }
+    } catch (error) {
+      console.error('Erro ao verificar permissão:', error)
+      setPermission({ isSuperAdmin: false, user: null })
+    } finally {
+      setPermissionLoading(false)
+    }
+  }
+
+  // Verificar permissão do usuário
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      checkPermission()
+    } else if (!isPending) {
+      setPermissionLoading(false)
+    }
+  }, [isAuthenticated, user, isPending])
+
+  // Carregar agentes disponíveis
+  useEffect(() => {
+    if (permission?.isSuperAdmin) {
+      loadAvailableAgents()
+    }
+  }, [permission?.isSuperAdmin])
 
   // Verificar se usuário é super_admin
-  if (isPending) {
+  if (isPending || permissionLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -54,7 +88,7 @@ export default function PlaygroundPage() {
     )
   }
 
-  if (!user || !isSuperAdmin(user.role)) {
+  if (!isAuthenticated || !permission?.isSuperAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Alert className="max-w-md">
@@ -65,11 +99,6 @@ export default function PlaygroundPage() {
       </div>
     )
   }
-
-  // Carregar agentes disponíveis
-  useEffect(() => {
-    loadAvailableAgents()
-  }, [])
 
   const loadAvailableAgents = async () => {
     try {

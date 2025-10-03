@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getFullUser, isSuperAdmin } from '@/lib/auth-utils'
-import { FalachefeAgentSquad, defaultFalachefeConfig } from '@/agents/core/agent-squad-setup'
-
-// Instância global do Agent Squad
-let agentSquad: FalachefeAgentSquad | null = null
-
-async function getAgentSquad(): Promise<FalachefeAgentSquad> {
-  if (!agentSquad) {
-    agentSquad = new FalachefeAgentSquad(defaultFalachefeConfig)
-    await agentSquad.initialize()
-  }
-  return agentSquad
-}
+import { FinancialAgentDirect } from '@/agents/financial/financial-agent-direct'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth.api.getSession({
-      headers: request.headers,
+      headers: request.headers
     })
-
+    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Não autorizado' },
@@ -28,48 +16,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar se é super_admin
     const fullUser = await getFullUser(session.user)
+    
     if (!fullUser || !isSuperAdmin(fullUser.role)) {
       return NextResponse.json(
-        { error: 'Acesso negado. Apenas super_admin pode executar testes de agentes' },
+        { error: 'Acesso negado. Apenas super_admin pode acessar esta funcionalidade' },
         { status: 403 }
       )
     }
 
-    // Parse do body da requisição
-    const body = await request.json()
-    const { agentType, message, context = {} } = body
+    const { agentType, message, context } = await request.json()
 
     if (!agentType || !message) {
       return NextResponse.json(
-        { error: 'agentType e message são obrigatórios' },
+        { error: 'Tipo de agente e mensagem são obrigatórios' },
         { status: 400 }
       )
     }
 
-    // Obter o Agent Squad
-    const squad = await getAgentSquad()
-    const agentManager = squad.getAgentManager()
-
-    // Buscar agente disponível do tipo especificado
-    const availableAgent = await agentManager.getAvailableAgent(agentType)
-
-    if (!availableAgent) {
+    // Por enquanto, só suportamos o agente financeiro
+    if (agentType !== 'financial') {
       return NextResponse.json(
-        { 
-          error: `Nenhum agente disponível do tipo '${agentType}'`,
-          availableTypes: Array.from(new Set(agentManager.getAvailableAgents().map((a: any) => a.type)))
+        {
+          error: `Agente do tipo '${agentType}' não disponível no modo direto`,
+          availableTypes: ['financial']
         },
         { status: 404 }
       )
     }
 
-    // Executar o agente
     const startTime = Date.now()
-    
+
     try {
-      const response = await availableAgent.process(message, {
+      // Usar agente financeiro direto
+      const financialAgent = new FinancialAgentDirect()
+      await financialAgent.initialize({})
+
+      const response = await financialAgent.process(message, {
         ...context,
         userId: fullUser.id,
         sessionId: `playground-${Date.now()}`,
@@ -82,9 +65,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         agent: {
-          id: agentType, // Usar agentType como ID para consistência
-          type: agentType,
-          name: agentType // Usar agentType como nome
+          id: financialAgent.agentId,
+          type: financialAgent.agentType,
+          name: financialAgent.agentName
         },
         request: {
           message,
@@ -96,31 +79,27 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         }
       })
-
     } catch (agentError) {
-      const duration = Date.now() - startTime
-      
       console.error(`Erro ao executar agente ${agentType}:`, agentError)
-      
+
       return NextResponse.json({
         success: false,
         error: agentError instanceof Error ? agentError.message : 'Erro desconhecido',
         agent: {
-          id: agentType,
-          type: agentType,
-          name: agentType
+          id: 'financial-agent-direct',
+          type: 'financial',
+          name: 'Financial Agent (Direct)'
         },
         request: {
           message,
           context
         },
         metrics: {
-          duration,
+          duration: Date.now() - startTime,
           timestamp: new Date().toISOString()
         }
       }, { status: 500 })
     }
-
   } catch (error) {
     console.error('Erro na API de teste de agentes:', error)
     return NextResponse.json(

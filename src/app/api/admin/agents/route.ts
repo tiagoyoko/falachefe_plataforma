@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getFullUser, isSuperAdmin } from '@/lib/auth-utils'
-import { FalachefeAgentSquad, defaultFalachefeConfig } from '@/agents/core/agent-squad-setup'
-
-// Instância global do Agent Squad
-let agentSquad: FalachefeAgentSquad | null = null
-
-async function getAgentSquad(): Promise<FalachefeAgentSquad> {
-  if (!agentSquad) {
-    agentSquad = new FalachefeAgentSquad(defaultFalachefeConfig)
-    await agentSquad.initialize()
-  }
-  return agentSquad
-}
+import { FinancialAgentDirect } from '@/agents/financial/financial-agent-direct'
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticação
     const session = await auth.api.getSession({
-      headers: request.headers,
+      headers: request.headers
     })
-
+    
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Não autorizado' },
@@ -28,8 +16,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verificar se é super_admin
     const fullUser = await getFullUser(session.user)
+    
     if (!fullUser || !isSuperAdmin(fullUser.role)) {
       return NextResponse.json(
         { error: 'Acesso negado. Apenas super_admin pode acessar esta funcionalidade' },
@@ -37,26 +25,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Obter agentes disponíveis
-    const squad = await getAgentSquad()
-    const agentManager = squad.getAgentManager()
-    const allAgents = agentManager.getAvailableAgents()
+    // Usar agente financeiro direto por enquanto
+    const financialAgent = new FinancialAgentDirect()
+    await financialAgent.initialize({})
 
-    const agents = allAgents.map((agent: any) => ({
-      id: agent.id,
-      type: agent.type,
-      name: agent.metadata?.name || agent.type,
-      description: agent.metadata?.description || `Agente do tipo ${agent.type}`,
-      capabilities: agent.metadata?.specializations || [],
-      status: agent.state === 'active' ? 'active' : 'inactive'
-    }))
+    const agents = [{
+      id: financialAgent.agentId,
+      type: financialAgent.agentType,
+      name: financialAgent.agentName,
+      description: financialAgent.agentDescription,
+      capabilities: financialAgent.agentSpecializations,
+      status: 'active' as const
+    }]
 
     return NextResponse.json({
       success: true,
       agents,
       total: agents.length
     })
-
   } catch (error) {
     console.error('Erro ao listar agentes:', error)
     return NextResponse.json(
