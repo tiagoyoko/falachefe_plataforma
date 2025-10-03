@@ -104,6 +104,7 @@ export interface AgentCapabilities {
 }
 
 export interface AgentConfig {
+  id?: string;
   model: string;
   temperature: number;
   maxTokens: number;

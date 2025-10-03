@@ -110,7 +110,7 @@ export class AgentStateManager extends EventEmitter {
 
   canRecover(agentId: string): boolean {
     const attempts = this.getRecoveryAttempts(agentId)
-    return attempts < this.config.maxRecoveryAttempts
+    return attempts < this.config.recoveryAttempts
   }
 
   getAllStates(): Map<string, AgentState> {

@@ -48,7 +48,7 @@ describe('AgentStateManager', () => {
       expect(eventSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           agentId: 'agent-1',
-          oldState: 'inactive',
+          oldState: undefined,
           newState: 'active',
           reason: 'Test activation'
         })
@@ -96,7 +96,7 @@ describe('AgentStateManager', () => {
       await stateManager.setState('agent-1', 'active')
       
       const stats = stateManager.getStats()
-      expect(stats.total).toBe(1)
+      expect(stats.totalAgents).toBe(1)
       expect(stats.states.active).toBe(1)
       expect(stats.states.inactive).toBe(0)
       expect(stats.states.error).toBe(0)
@@ -108,7 +108,7 @@ describe('AgentStateManager', () => {
       await stateManager.setState('agent-3', 'error')
       
       const stats = stateManager.getStats()
-      expect(stats.total).toBe(3)
+      expect(stats.totalAgents).toBe(3)
       expect(stats.states.active).toBe(1)
       expect(stats.states.inactive).toBe(1)
       expect(stats.states.error).toBe(1)

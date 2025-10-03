@@ -58,11 +58,14 @@ export interface CashFlowAnalysis {
 }
 
 export class FinancialAgent extends BaseAgent {
+  public id: string
+  public isActive: boolean
   private intentClassifier: IntentClassifier
   private expenseManager: ExpenseManager
   private cashFlowAnalyzer: CashFlowAnalyzer
   private categoryManager: CategoryManager
   private memoryManager: MemorySystem
+  private capabilities: string[]
   private categories: string[] = [
     'alimentação',
     'transporte',
@@ -79,6 +82,9 @@ export class FinancialAgent extends BaseAgent {
 
   constructor(config: AgentConfig, memoryManager: MemorySystem) {
     super()
+    
+    this.id = config.id || 'financial-agent'
+    this.isActive = true
     
     this.capabilities = [
       'add_expense',
