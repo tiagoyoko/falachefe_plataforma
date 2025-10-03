@@ -52,51 +52,84 @@
 - Métricas de sucesso e KPIs
 - Próximos passos imediatos
 
+### **5. Plano de Integração Falachefe**
+📄 **[agent-squad-integration-plan.md](./agent-squad-integration-plan.md)**
+- Plano completo para integrar Agent Squad ao projeto Falachefe
+- Análise da arquitetura atual
+- Implementação passo a passo (6 semanas)
+- Estrutura de código e configurações
+- Cronograma e marcos detalhados
+- Riscos e mitigações
+
+### **6. Exemplos de Código**
+📄 **[agent-squad-code-examples.md](./agent-squad-code-examples.md)**
+- Exemplos práticos de implementação
+- Código TypeScript e Python
+- Integração com webhook UazAPI
+- Dashboard e monitoramento
+- Scripts de deploy e configuração
+
 ---
 
 ## 🎯 **Como Usar Esta Documentação**
 
 ### **Para Desenvolvedores**
-1. **Para implementação AWS**: `agent-squad-implementation-guide.md`
-2. **Para implementação self-hosted**: `agent-squad-implementation-guide-no-aws.md`
-3. **Continue com**: `agent-squad-implementation-guide-part2.md`
-4. **Use para configurar**: `agent-squad-self-hosted-config.md`
+1. **Para integração com Falachefe**: `agent-squad-integration-plan.md`
+2. **Para implementação AWS**: `agent-squad-implementation-guide.md`
+3. **Para implementação self-hosted**: `agent-squad-implementation-guide-no-aws.md`
+4. **Continue com**: `agent-squad-implementation-guide-part2.md`
+5. **Use para configurar**: `agent-squad-self-hosted-config.md`
+6. **Exemplos de código**: `agent-squad-code-examples.md`
 
 ### **Para Gestores e Stakeholders**
 1. **Leia primeiro**: `agent-squad-executive-summary.md`
-2. **Consulte detalhes**: `agent-squad-implementation-guide.md` (seções 1-3)
+2. **Plano de integração**: `agent-squad-integration-plan.md` (seções 1-3)
+3. **Consulte detalhes**: `agent-squad-implementation-guide.md` (seções 1-3)
 
 ### **Para DevOps e Infraestrutura**
-1. **Para AWS**: `agent-squad-config-examples.md`
-2. **Para self-hosted**: `agent-squad-self-hosted-config.md`
-3. **Scripts de deploy**: Seções específicas de deploy
-4. **Docker e configurações**: Templates completos
+1. **Para integração Falachefe**: `agent-squad-integration-plan.md` (seções 5-6)
+2. **Para AWS**: `agent-squad-config-examples.md`
+3. **Para self-hosted**: `agent-squad-self-hosted-config.md`
+4. **Scripts de deploy**: `agent-squad-code-examples.md`
+5. **Docker e configurações**: Templates completos
 
 ---
 
-## 🏗️ **Estrutura do Projeto Proposta**
+## 🏗️ **Estrutura do Projeto Integrado**
 
 ```
-falachefe-agent-squad/
+falachefe/                         # Projeto existente
 ├── docs/                          # Documentação
 │   └── technical/
 │       ├── agent-squad-index.md          # Este arquivo
+│       ├── agent-squad-integration-plan.md    # Plano de integração
+│       ├── agent-squad-executive-summary.md   # Resumo executivo
+│       ├── agent-squad-code-examples.md       # Exemplos de código
 │       ├── agent-squad-implementation-guide.md
 │       ├── agent-squad-implementation-guide-part2.md
 │       ├── agent-squad-config-examples.md
-│       └── agent-squad-executive-summary.md
-├── src/                           # Código fonte
-│   ├── agents/                    # Agentes especializados
-│   ├── memory/                    # Sistema de memória
-│   ├── integrations/              # Integrações externas
-│   ├── monitoring/                # Monitoramento
-│   └── utils/                     # Utilitários
-├── playground/                    # Ambiente de testes
-├── scripts/                       # Scripts de automação
-├── tests/                         # Testes automatizados
-├── requirements.txt               # Dependências Python
-├── docker-compose.yml            # Ambiente local
-├── serverless.yml                # Deploy AWS
+│       └── agent-squad-self-hosted-config.md
+├── src/                           # Código fonte existente + novo
+│   ├── app/                       # Next.js App Router
+│   │   ├── api/webhook/uaz/       # Webhook UazAPI (modificado)
+│   │   └── (dashboard)/agents/    # Dashboard de agentes (novo)
+│   ├── lib/                       # Bibliotecas existentes + novo
+│   │   ├── agents/                # Sistema Agent Squad (novo)
+│   │   │   ├── orchestrator.ts
+│   │   │   ├── agent-squad-service.ts
+│   │   │   └── memory/
+│   │   ├── uaz-api/               # UazAPI existente
+│   │   └── auth.ts                # Better Auth existente
+│   ├── agent-squad/               # Serviço Python (novo)
+│   │   ├── main.py
+│   │   ├── requirements.txt
+│   │   ├── Dockerfile
+│   │   └── agents/
+│   └── components/                # Componentes existentes + novo
+├── scripts/                       # Scripts existentes + novo
+│   └── deploy-agent-squad.sh      # Script de deploy (novo)
+├── docker-compose.yml            # Ambiente local (modificado)
+├── package.json                  # Dependências Node.js (modificado)
 └── README.md                     # Documentação geral
 ```
 
@@ -105,30 +138,36 @@ falachefe-agent-squad/
 ## 🚀 **Ordem de Implementação Recomendada**
 
 ### **Fase 1: Preparação (Semana 1)**
-1. ✅ Ler toda a documentação
+1. ✅ Ler documentação de integração
 2. ✅ Configurar ambiente de desenvolvimento
-3. ✅ Instalar dependências
-4. ✅ Configurar banco de dados e Redis
-5. ✅ Testar integração com UazAPI
+3. ✅ Instalar dependências Python e Node.js
+4. ✅ Configurar banco de dados (novas tabelas)
+5. ✅ Testar integração com UazAPI existente
 
-### **Fase 2: Desenvolvimento Core (Semanas 2-4)**
-1. ✅ Implementar orquestrador
-2. ✅ Desenvolver primeiro agente (Financeiro)
-3. ✅ Implementar sistema de memória
-4. ✅ Criar playground de testes
+### **Fase 2: Desenvolvimento Core (Semanas 2-3)**
+1. ✅ Implementar Agent Squad Service (Python)
+2. ✅ Implementar Orchestrator TypeScript
+3. ✅ Desenvolver sistema de memória
+4. ✅ Criar primeiro agente (Financeiro)
 5. ✅ Testes unitários e integração
 
-### **Fase 3: Expansão (Semanas 5-6)**
-1. ✅ Adicionar demais agentes
-2. ✅ Implementar memória compartilhada
-3. ✅ Testes de stress e performance
-4. ✅ Otimização e ajustes
+### **Fase 3: Integração (Semana 4)**
+1. ✅ Integrar com webhook UazAPI existente
+2. ✅ Adicionar demais agentes especializados
+3. ✅ Implementar APIs para dashboard
+4. ✅ Testes de integração completos
 
-### **Fase 4: Produção (Semanas 7-8)**
-1. ✅ Deploy para AWS
-2. ✅ Configurar monitoramento
-3. ✅ Testes de produção
-4. ✅ Go-live controlado
+### **Fase 4: Dashboard e Monitoramento (Semana 5)**
+1. ✅ Criar dashboard de agentes
+2. ✅ Implementar monitoramento e métricas
+3. ✅ Configurar alertas automáticos
+4. ✅ Testes de usuário
+
+### **Fase 5: Deploy e Produção (Semana 6)**
+1. ✅ Configurar Docker Compose
+2. ✅ Deploy em staging e produção
+3. ✅ Monitoramento ativo
+4. ✅ Otimizações baseadas em feedback
 
 ---
 
@@ -147,10 +186,11 @@ falachefe-agent-squad/
 - ✅ Satisfação do usuário > 4.5/5
 
 ### **Financeiro**
-- ✅ ROI > 180% em 8 meses
-- ✅ Redução de custos > 60%
+- ✅ ROI > 180% em 12 meses
+- ✅ Redução de custos > 70%
 - ✅ Aumento de receita > 25%
 - ✅ Payback period < 6 meses
+- ✅ Investimento total: R$ 80.000
 
 ---
 
@@ -187,10 +227,12 @@ falachefe-agent-squad/
 
 ### **Versão 1.0 (Janeiro 2025)**
 - ✅ Documentação completa criada
+- ✅ Plano de integração com Falachefe
 - ✅ Guias de implementação detalhados
 - ✅ Scripts e configurações prontos
 - ✅ Análise de ROI e benefícios
 - ✅ Roadmap de implementação definido
+- ✅ Exemplos de código práticos
 
 ### **Próximas Versões**
 - 🔄 Versão 1.1: Atualizações baseadas em feedback
@@ -199,6 +241,15 @@ falachefe-agent-squad/
 
 ---
 
-**🎉 Documentação completa do Agent Squad para o projeto Falachefe está pronta para implementação!**
+**🎉 Documentação completa do Agent Squad para integração com o projeto Falachefe está pronta para implementação!**
+
+**📋 Documentos Criados:**
+- ✅ Plano de integração completo (6 semanas)
+- ✅ Resumo executivo com ROI
+- ✅ Exemplos de código práticos
+- ✅ Guias de implementação detalhados
+- ✅ Scripts e configurações prontos
+
+**🚀 Próximo Passo:** Aprovar plano e iniciar implementação
 
 *Última atualização: Janeiro 2025*
