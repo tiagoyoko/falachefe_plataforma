@@ -1,54 +1,36 @@
 "use client";
 
-import { useSession } from "@/lib/auth-client";
+import { useSession, signIn, signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { Zap } from "lucide-react";
-import Link from "next/link";
 
-interface AuthButtonProps {
-  href?: string;
-  children: React.ReactNode;
-  className?: string;
-  variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
-  size?: "default" | "sm" | "lg" | "icon";
-}
-
-export function AuthButton({ 
-  href = "/dashboard", 
-  children, 
-  className,
-  variant = "default",
-  size = "lg"
-}: AuthButtonProps) {
+export function AuthButton() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
+    return <Button disabled>Carregando...</Button>;
+  }
+
+  if (session?.user) {
     return (
-      <Button disabled className={className} variant={variant} size={size}>
-        Carregando...
-      </Button>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground">
+          Olá, {session.user.name}
+        </span>
+        <Button variant="outline" onClick={() => signOut()}>
+          Sair
+        </Button>
+      </div>
     );
   }
 
-  // Se não estiver autenticado, redirecionar para login
-  if (!session) {
-    return (
-      <Button asChild className={className} variant={variant} size={size}>
-        <Link href="/login">
-          {children}
-          <Zap className="ml-2 h-5 w-5" />
-        </Link>
-      </Button>
-    );
-  }
-
-  // Se estiver autenticado, ir para o destino original
   return (
-    <Button asChild className={className} variant={variant} size={size}>
-      <Link href={href}>
-        {children}
-        <Zap className="ml-2 h-5 w-5" />
-      </Link>
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button variant="outline" onClick={() => signIn.social({ provider: "google" })}>
+        Entrar com Google
+      </Button>
+      <Button onClick={() => signIn.email({ email: "", password: "", callbackURL: "/dashboard" })}>
+        Entrar
+      </Button>
+    </div>
   );
 }

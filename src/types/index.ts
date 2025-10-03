@@ -32,6 +32,23 @@ export type {
   NewAuditLog,
 } from '../lib/auth-schema';
 
+export type {
+  SubscriptionPlan,
+  NewSubscriptionPlan,
+  UserSubscription,
+  NewUserSubscription,
+  Payment,
+  NewPayment,
+  Invoice,
+  NewInvoice,
+  UsageLimit,
+  NewUsageLimit,
+  UsageHistory,
+  NewUsageHistory,
+  StripeWebhook,
+  NewStripeWebhook,
+} from '../lib/billing-schema';
+
 // Additional types for the platform
 export interface UAZMessage {
   id: string;

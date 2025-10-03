@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
+import { MessageService } from '@/services/message-service';
 
 // Configuração do cliente UAZ
 const uazClient = new UAZClient({
@@ -224,10 +225,25 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
     waUnreadCount: chat.wa_unreadCount,
   });
 
-  // TODO: Implementar roteamento para orchestrator
-  // TODO: Salvar mensagem no banco de dados
-  // TODO: Determinar agente responsável
-  // TODO: Processar com agente especializado
+  try {
+    // Salvar mensagem no banco de dados
+    const result = await MessageService.processIncomingMessage(message, chat, owner);
+    
+    console.log('Message saved successfully:', {
+      messageId: result.message.id,
+      conversationId: result.conversation.id,
+      userId: result.user.id,
+      userName: result.user.name
+    });
+
+    // TODO: Implementar roteamento para orchestrator
+    // TODO: Determinar agente responsável
+    // TODO: Processar com agente especializado
+    
+  } catch (error) {
+    console.error('Erro ao salvar mensagem:', error);
+    // Não falhar o webhook por erro de banco, apenas logar
+  }
 }
 
 /**

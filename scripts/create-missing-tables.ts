@@ -39,7 +39,7 @@ async function createMissingTables() {
 
     // Lista de todas as tabelas necessárias
     const requiredTables = [
-      'companies', 'users', 'agents', 'conversations', 'messages', 'templates',
+      'companies', 'whatsapp_users', 'agents', 'conversations', 'messages', 'templates',
       'agent_memories', 'shared_memories', 'conversation_contexts', 'agent_learnings',
       'admin_users', 'audit_logs'
     ];

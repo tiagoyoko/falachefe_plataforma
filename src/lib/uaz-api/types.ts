@@ -33,11 +33,16 @@ export interface UAZWebhook {
 export interface SendTextMessageRequest {
   number: string;
   text: string;
+  linkPreview?: boolean;
+  linkPreviewTitle?: string;
+  linkPreviewDescription?: string;
+  linkPreviewImage?: string;
+  linkPreviewLarge?: boolean;
   delay?: number;
   readchat?: boolean;
   readmessages?: boolean;
   replyid?: string;
-  mentions?: string[];
+  mentions?: string;
   forward?: boolean;
   track_source?: string;
   track_id?: string;
@@ -46,14 +51,15 @@ export interface SendTextMessageRequest {
 
 export interface SendMediaMessageRequest {
   number: string;
-  media: string; // URL or base64
-  type: 'image' | 'video' | 'audio' | 'document';
-  caption?: string;
-  filename?: string;
+  type: 'image' | 'video' | 'document' | 'audio' | 'myaudio' | 'ptt' | 'sticker';
+  file: string; // URL or base64
+  text?: string; // Caption/legenda
+  docName?: string; // Nome do arquivo (apenas para documents)
   delay?: number;
   readchat?: boolean;
   readmessages?: boolean;
   replyid?: string;
+  mentions?: string;
   forward?: boolean;
   track_source?: string;
   track_id?: string;

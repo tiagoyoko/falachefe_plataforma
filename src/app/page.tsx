@@ -33,9 +33,9 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <AuthButton size="lg" className="text-lg px-8 py-6">
-                Acessar Painel Admin
-              </AuthButton>
+              <div className="text-lg px-8 py-6">
+                <AuthButton />
+              </div>
               <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
                 <Link href="/demo">
                   Ver Demonstração
@@ -227,9 +227,9 @@ export default function Home() {
               Comece agora e automatize seu negócio com agentes de IA especializados via WhatsApp.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <AuthButton size="lg" className="text-lg px-8 py-6">
-                Começar Agora
-              </AuthButton>
+              <div className="text-lg px-8 py-6">
+                <AuthButton />
+              </div>
               <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
                 <Link href="/contato">
                   Falar com Especialista

@@ -21,6 +21,7 @@ async function checkDatabaseConnection(): Promise<boolean> {
       max: 1,
       idle_timeout: 5,
       connect_timeout: 10,
+      ssl: { rejectUnauthorized: false }, // Para desenvolvimento com certificados self-signed
     });
 
     // Simple query to test connection

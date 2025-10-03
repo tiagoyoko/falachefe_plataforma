@@ -16,7 +16,7 @@ export const agentTypeEnum = pgEnum('agent_type', ['sales', 'support', 'marketin
 export const conversationStatusEnum = pgEnum('conversation_status', ['active', 'waiting', 'escalated', 'closed', 'archived']);
 export const conversationPriorityEnum = pgEnum('conversation_priority', ['low', 'medium', 'high', 'urgent']);
 export const senderTypeEnum = pgEnum('sender_type', ['user', 'agent', 'system']);
-export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'document', 'template', 'interactive', 'flow']);
+export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'video', 'document', 'audio', 'myaudio', 'ptt', 'sticker', 'template', 'interactive', 'flow']);
 export const messageStatusEnum = pgEnum('message_status', ['pending', 'sent', 'delivered', 'read', 'failed']);
 export const templateCategoryEnum = pgEnum('template_category', ['marketing', 'utility', 'authentication']);
 export const templateStatusEnum = pgEnum('template_status', ['draft', 'pending', 'approved', 'rejected', 'paused']);
@@ -43,7 +43,7 @@ export const companies = pgTable("companies", {
 });
 
 // Users (Usuários finais via WhatsApp)
-export const users = pgTable("users", {
+export const users = pgTable("whatsapp_users", {
   id: uuid("id").primaryKey().defaultRandom(),
   phoneNumber: varchar("phone_number", { length: 20 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -184,3 +184,21 @@ export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
 export type Template = typeof templates.$inferSelect;
 export type NewTemplate = typeof templates.$inferInsert;
+
+// Re-export billing types
+export type {
+  SubscriptionPlan,
+  NewSubscriptionPlan,
+  UserSubscription,
+  NewUserSubscription,
+  Payment,
+  NewPayment,
+  Invoice,
+  NewInvoice,
+  UsageLimit,
+  NewUsageLimit,
+  UsageHistory,
+  NewUsageHistory,
+  StripeWebhook,
+  NewStripeWebhook,
+} from './billing-schema';

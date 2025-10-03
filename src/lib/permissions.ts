@@ -35,6 +35,11 @@ export const PERMISSIONS = {
   USERS_EDIT: 'users:edit',
   USERS_DELETE: 'users:delete',
   USERS_EXPORT: 'users:export',
+  USERS_BLOCK: 'users:block',
+  USERS_UNBLOCK: 'users:unblock',
+  USERS_CHANGE_PLAN: 'users:change_plan',
+  USERS_SEND_NOTIFICATION: 'users:send_notification',
+  USERS_VIEW_DETAILS: 'users:view_details',
   
   // Companies
   COMPANIES_VIEW: 'companies:view',
@@ -100,6 +105,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.USERS_CREATE,
     PERMISSIONS.USERS_EDIT,
     PERMISSIONS.USERS_EXPORT,
+    PERMISSIONS.USERS_BLOCK,
+    PERMISSIONS.USERS_UNBLOCK,
+    PERMISSIONS.USERS_CHANGE_PLAN,
+    PERMISSIONS.USERS_SEND_NOTIFICATION,
+    PERMISSIONS.USERS_VIEW_DETAILS,
     
     // Companies
     PERMISSIONS.COMPANIES_VIEW,
@@ -136,6 +146,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     // Users/Subscribers (somente visualização)
     PERMISSIONS.USERS_VIEW,
     PERMISSIONS.USERS_EXPORT,
+    PERMISSIONS.USERS_VIEW_DETAILS,
     
     // Companies (somente visualização)
     PERMISSIONS.COMPANIES_VIEW,

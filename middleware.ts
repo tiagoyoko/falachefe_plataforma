@@ -30,6 +30,15 @@ const protectedApiRoutes = [
   "/api/companies"
 ];
 
+// Rotas de API do Better Auth (sempre permitidas)
+const authApiRoutes = [
+  "/api/auth/sign-in",
+  "/api/auth/sign-up", 
+  "/api/auth/sign-out",
+  "/api/auth/session",
+  "/api/auth/callback"
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -38,12 +47,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Permitir arquivos estáticos
+  // Permitir arquivos estáticos e rotas de autenticação
   if (
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/api/auth/") ||
     pathname.includes(".") ||
-    pathname.startsWith("/favicon")
+    pathname.startsWith("/favicon") ||
+    authApiRoutes.some(route => pathname.startsWith(route))
   ) {
     return NextResponse.next();
   }
@@ -53,15 +63,16 @@ export async function middleware(request: NextRequest) {
     if (protectedRoutes.some(route => pathname.startsWith(route)) || 
         protectedApiRoutes.some(route => pathname.startsWith(route))) {
       
+      // Usar o método correto do Better Auth conforme documentação
       const session = await auth.api.getSession({
         headers: request.headers,
       });
 
-      if (!session) {
+      if (!session?.user) {
         // Redirecionar para login se não autenticado
         if (pathname.startsWith("/api/")) {
           return NextResponse.json(
-            { error: "Não autorizado" },
+            { error: "Não autorizado", code: "UNAUTHORIZED" },
             { status: 401 }
           );
         } else {
@@ -71,11 +82,15 @@ export async function middleware(request: NextRequest) {
         }
       }
 
-      // Para rotas de API, verificar se é admin
+      // Verificar se usuário está ativo (usar propriedades disponíveis no Better Auth)
+      // Nota: isActive e role são campos customizados que precisam ser estendidos
+      // Por enquanto, apenas verificar se a sessão é válida
+      
+      // Para rotas de admin, verificar se usuário tem permissão
       if (pathname.startsWith("/api/admin")) {
-        // Aqui você pode adicionar verificação de role específica
-        // Por enquanto, apenas verificar se está autenticado
-        return NextResponse.next();
+        // TODO: Implementar verificação de role quando estendermos os tipos do Better Auth
+        // Por enquanto, permitir acesso a usuários autenticados
+        console.log(`Acesso admin para usuário: ${session.user.email}`)
       }
     }
 

@@ -2,8 +2,12 @@ import {
   pgTable, 
   text, 
   timestamp, 
-  boolean
+  boolean,
+  pgEnum
 } from "drizzle-orm/pg-core";
+
+// Enum para roles
+export const roleEnum = pgEnum('role', ['super_admin', 'manager', 'analyst', 'viewer']);
 
 // Schema específico para Better Auth
 export const user = pgTable("user", {
@@ -14,7 +18,7 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-  role: text("role").notNull().default("user"),
+  role: roleEnum("role").notNull().default("viewer"),
   isActive: boolean("isActive").notNull().default(true),
 });
 
