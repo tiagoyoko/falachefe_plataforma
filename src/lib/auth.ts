@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { admin, anonymous } from "better-auth/plugins"
 import { db } from "./db"
 import * as betterAuthSchema from "./better-auth-schema"
+import { emailService } from "./email-service"
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -34,12 +35,21 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 dias
     updateAge: 60 * 60 * 24, // Atualizar a cada 24h
   },
-  // Configuração de email (se necessário)
+  // Configuração de email
   emailVerification: {
     sendVerificationEmail: async (data: { user: { id: string; email: string; name: string }; url: string; token: string }) => {
-      // Implementar envio de email de verificação
-      console.log(`Email de verificação para: ${data.user.email}`)
-      // TODO: Integrar com serviço de email (Resend, SendGrid, etc.)
+      console.log(`📧 Enviando email de verificação para: ${data.user.email}`);
+      
+      try {
+        const success = await emailService.sendVerificationEmail(data);
+        if (success) {
+          console.log(`✅ Email de verificação enviado com sucesso para ${data.user.email}`);
+        } else {
+          console.error(`❌ Falha ao enviar email de verificação para ${data.user.email}`);
+        }
+      } catch (error) {
+        console.error(`❌ Erro ao enviar email de verificação:`, error);
+      }
     },
   },
 })

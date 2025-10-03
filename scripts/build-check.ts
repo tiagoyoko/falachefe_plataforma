@@ -50,8 +50,8 @@ async function main() {
       return;
     }
 
-    console.log('Running database migration...');
-    execSync('pnpm run db:migrate', { stdio: 'inherit' });
+    console.log('Running robust database migration...');
+    execSync('tsx scripts/migrate-database-robust.ts', { stdio: 'inherit' });
   } else {
     console.log('Skipping database migration');
   }
