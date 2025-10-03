@@ -1,6 +1,8 @@
 module.exports = {
   displayName: 'Falachefe Tests',
   testEnvironment: 'node',
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.ts',
     '<rootDir>/src/**/*.test.ts',
@@ -22,12 +24,21 @@ module.exports = {
     },
   },
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: 'tsconfig.json',
+      useESM: true,
+    }],
   },
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 10000,
   verbose: true,
   setupFilesAfterEnv: ['<rootDir>/src/lib/uaz-api/__tests__/setup.ts'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(.*\\.mjs$))',
+  ],
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   projects: [
     {
       displayName: 'UAZ API',

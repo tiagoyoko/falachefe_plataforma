@@ -1,96 +1,74 @@
-# Histórias de Usuário - Plataforma SaaS de Chat Multagente de IA
+# 📋 **Índice de Stories - Falachefe**
 
-## Visão Geral
+## 🎯 **Epic: Implementação Agent Squad Framework**
 
-Esta seção contém as histórias de usuário organizadas por épicos e fases de desenvolvimento, seguindo a metodologia BMad Method.
+### **Fase 1: Setup e Infraestrutura**
+- [📋 **Story 1.1**](./story-1-1-setup-agent-squad-framework.md) - Setup do Agent Squad Framework
+- [📋 **Story 1.2**](./story-1-2-configuracao-sistema-memoria.md) - Configuração do Sistema de Memória
+- [📋 **Story 1.3**](./story-1-3-agente-financeiro-fluxo-caixa.md) - Agente Financeiro de Fluxo de Caixa
 
-## Estrutura por Fase
+### **Fase 2: Core Implementation** (Em Planejamento)
+- [ ] **Story 2.1** - Implementação do Agent Manager
+- [ ] **Story 2.2** - Implementação do Agent Orchestrator
+- [ ] **Story 2.3** - Sistema de Streaming em Tempo Real
+- [ ] **Story 2.4** - Integração com Webhook UazAPI
 
-### 🚀 **Fase 1 - MVP (0-3 meses)**
-- [Epic 1: Integração WhatsApp UAZ API](./fase-1-mvp/epic-1-stories.md)
-- [Epic 2: Sistema de Orquestração](./fase-1-mvp/epic-2-stories.md)
-- [Epic 3: Agentes Básicos](./fase-1-mvp/epic-3-stories.md)
-- [Epic 4: Painel Administrativo Básico](./fase-1-mvp/epic-4-stories.md)
-- [Epic 5: Sistema de Memória Persistente](./fase-1-mvp/epic-5-stories.md)
+### **Fase 3: Admin Panel** (Em Planejamento)
+- [ ] **Story 3.1** - Painel de Customização de Agentes
+- [ ] **Story 3.2** - APIs de Configuração
+- [ ] **Story 3.3** - Testes de Personalização
 
-### 🔧 **Fase 2 - Funcionalidades Avançadas (4-6 meses)**
-- [Epic 6: Agentes Avançados](./fase-2-avancado/epic-6-stories.md)
-- [Epic 7: Dashboards e Monitoramento](./fase-2-avancado/epic-7-stories.md)
-- [Epic 8: Controle de Acesso RBAC](./fase-2-avancado/epic-8-stories.md)
-- [Epic 9: Ambiente Sandbox](./fase-2-avancado/epic-9-stories.md)
-- [Epic 10: Busca Semântica](./fase-2-avancado/epic-10-stories.md)
+### **Fase 4: Deploy e Produção** (Em Planejamento)
+- [ ] **Story 4.1** - Configuração Docker Compose
+- [ ] **Story 4.2** - Deploy em Staging e Produção
+- [ ] **Story 4.3** - Monitoramento e Alertas
 
-### ⚡ **Fase 3 - Otimização (7-9 meses)**
-- [Epic 11: Workflows Complexos](./fase-3-otimizacao/epic-11-stories.md)
-- [Epic 12: Integrações Externas](./fase-3-otimizacao/epic-12-stories.md)
-- [Epic 13: Analytics Avançado](./fase-3-otimizacao/epic-13-stories.md)
-- [Epic 14: Otimização de Performance](./fase-3-otimizacao/epic-14-stories.md)
+## 📊 **Status das Stories**
 
-### 🌍 **Fase 4 - Escala e Expansão (10-12 meses)**
-- [Epic 15: Internacionalização](./fase-4-escala/epic-15-stories.md)
-- [Epic 16: Marketplace de Agentes](./fase-4-escala/epic-16-stories.md)
-- [Epic 17: APIs Públicas](./fase-4-escala/epic-17-stories.md)
-- [Epic 18: Memória Distribuída](./fase-4-escala/epic-18-stories.md)
+| **Story** | **Status** | **Prioridade** | **Story Points** | **Responsável** |
+|-----------|------------|----------------|------------------|-----------------|
+| 1.1 | Ready for Development | Alta | 8 | James (Dev) |
+| 1.2 | Ready for Development | Alta | 13 | James (Dev) |
+| 1.3 | Ready for Development | Alta | 21 | James (Dev) |
+| 2.1 | Em Planejamento | Média | - | - |
+| 2.2 | Em Planejamento | Média | - | - |
+| 2.3 | Em Planejamento | Média | - | - |
+| 2.4 | Em Planejamento | Alta | - | - |
 
-## Template de História de Usuário
+## 🎯 **Resumo do Epic**
 
-### Estrutura Padrão
-```
-# [ID] Título da História
+### **Objetivo Principal**
+Implementar o Agent Squad Framework completo no projeto Falachefe, criando um sistema de agentes de IA especializados que processam mensagens do WhatsApp via UazAPI.
 
-## Como [persona]
-## Quero [funcionalidade]
-## Para que [benefício]
+### **Foco Principal**
+- **Agente Financeiro de Fluxo de Caixa** - Componente principal
+- **Sistema de Memória** - Individual e compartilhada
+- **Integração UazAPI** - Processamento de mensagens WhatsApp
+- **Admin Panel** - Customização de agentes
 
-## Critérios de Aceitação
-- [ ] Critério 1
-- [ ] Critério 2
-- [ ] Critério 3
+### **Métricas de Sucesso**
+- Tempo de resposta < 3 segundos
+- Precisão de classificação > 85%
+- Disponibilidade > 99.9%
+- ROI > 180% em 12 meses
 
-## Definição de Pronto
-- [ ] Item 1
-- [ ] Item 2
-- [ ] Item 3
+## 📅 **Cronograma**
 
-## Estimativa
-[Story Points]
+| **Semana** | **Foco** | **Stories** | **Entregáveis** |
+|------------|----------|-------------|-----------------|
+| **Semana 1** | Setup e Infraestrutura | 1.1, 1.2, 1.3 | Framework configurado, memória funcionando, agente financeiro |
+| **Semana 2** | Core Implementation | 2.1, 2.2, 2.3, 2.4 | Agent Manager, Orchestrator, Streaming, UazAPI |
+| **Semana 3** | Admin Panel | 3.1, 3.2, 3.3 | Painel de customização, APIs, testes |
+| **Semana 4** | Deploy e Produção | 4.1, 4.2, 4.3 | Docker, Deploy, Monitoramento |
 
-## Dependências
-- História X
-- História Y
+## 🔗 **Links Relacionados**
 
-## Notas Técnicas
-- Detalhe técnico 1
-- Detalhe técnico 2
-```
+- [📋 Epic Principal](../epics/epic-agent-squad-framework.md)
+- [📋 Plano de Implementação](../technical/PLANO-IMPLEMENTACAO-AGENT-SQUAD-FALACHEFE.md)
+- [📋 Definition of Ready](./definition-of-ready.md)
+- [📋 Definition of Done](./dor-summary.md)
 
-## Status das Histórias
+---
 
-### Fase 1 - MVP
-| Épico | Histórias | Concluídas | Em Progresso | Pendentes | Story Points |
-|-------|-----------|------------|--------------|-----------|--------------|
-| Epic 1 | 8 | 0 | 0 | 8 | 55 |
-| Epic 2 | 6 | 0 | 0 | 6 | 36 |
-| Epic 3 | 10 | 0 | 0 | 10 | 76 |
-| Epic 4 | 10 | 0 | 0 | 10 | 67 |
-| Epic 5 | 10 | 0 | 0 | 10 | 74 |
-| **Total** | **44** | **0** | **0** | **44** | **308** |
-
-## Critérios de Qualidade
-
-### Histórias Bem Escritas
-- ✅ **Independentes**: Podem ser desenvolvidas isoladamente
-- ✅ **Negociáveis**: Detalhes podem ser discutidos
-- ✅ **Valiosas**: Entregam valor ao usuário
-- ✅ **Estimáveis**: Podem ser estimadas pelo time
-- ✅ **Pequenas**: Podem ser completadas em 1-2 sprints
-- ✅ **Testáveis**: Podem ser validadas com testes
-
-### Definição de Pronto
-- [ ] Código implementado e testado
-- [ ] Testes unitários passando
-- [ ] Testes de integração passando
-- [ ] Documentação atualizada
-- [ ] Code review aprovado
-- [ ] Deploy em ambiente de desenvolvimento
-- [ ] Validação com usuário final
+**Última atualização**: Janeiro 2025
+**Responsável**: Sarah (Product Owner)

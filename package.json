@@ -35,7 +35,10 @@
     "validate:uaz": "tsx scripts/validate-uaz-integration.ts",
     "test:uaz": "jest src/lib/uaz-api/__tests__",
     "test:uaz:watch": "jest src/lib/uaz-api/__tests__ --watch",
-    "test:uaz:coverage": "jest src/lib/uaz-api/__tests__ --coverage"
+    "test:uaz:coverage": "jest src/lib/uaz-api/__tests__ --coverage",
+    "bmad:refresh": "bmad-method install -f -i codex",
+    "bmad:list": "bmad-method list:agents",
+    "bmad:validate": "bmad-method validate"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.9",
@@ -50,9 +53,12 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@react-email/render": "^1.3.1",
     "@tanstack/react-query": "^5.90.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/redis": "^4.0.10",
+    "@types/uuid": "^10.0.0",
+    "@upstash/redis": "^1.35.4",
     "ai": "^5.0.9",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
@@ -76,6 +82,7 @@
     "sonner": "^2.0.7",
     "stripe": "^19.0.0",
     "tailwind-merge": "^3.3.1",
+    "uuid": "^13.0.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.8"
   },

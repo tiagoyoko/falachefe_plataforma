@@ -3,6 +3,7 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
+import { FalachefeAgentSquad, createFalachefeAgentSquad, defaultFalachefeConfig } from '@/agents/core/agent-squad-setup';
 
 // Configuração do cliente UAZ
 const uazClient = new UAZClient({
@@ -12,6 +13,22 @@ const uazClient = new UAZClient({
   webhookSecret: process.env.UAZ_WEBHOOK_SECRET,
   timeout: 30000,
 });
+
+// Agent Squad instance (singleton)
+let agentSquad: FalachefeAgentSquad | null = null;
+
+/**
+ * Initialize Agent Squad if not already initialized
+ */
+async function initializeAgentSquad(): Promise<FalachefeAgentSquad> {
+  if (!agentSquad) {
+    console.log('🤖 Initializing Agent Squad...');
+    agentSquad = createFalachefeAgentSquad(defaultFalachefeConfig);
+    await agentSquad.initialize();
+    console.log('✅ Agent Squad initialized');
+  }
+  return agentSquad;
+}
 
 /**
  * Valida se o payload UAZAPI tem a estrutura correta baseada no tipo de evento
@@ -236,9 +253,40 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
-    // TODO: Implementar roteamento para orchestrator
-    // TODO: Determinar agente responsável
-    // TODO: Processar com agente especializado
+    // Process message through Agent Squad
+    try {
+      const squad = await initializeAgentSquad();
+      
+      // Convert UAZ message to Agent Squad format
+      const agentMessage = {
+        id: message.id,
+        text: message.text || message.content,
+        type: message.type || 'text',
+        sender: message.sender,
+        chatId: message.chatid,
+        timestamp: message.messageTimestamp,
+        isGroup: message.isGroup,
+        fromMe: message.fromMe,
+        metadata: {
+          messageId: message.messageid,
+          senderName: message.senderName,
+          chatName: chat.name,
+          owner: owner
+        }
+      };
+
+      // Process through Agent Squad orchestrator
+      const response = await squad.processMessage(agentMessage);
+      
+      console.log('Agent Squad response:', response);
+      
+      // TODO: Send response back to user via UAZ API
+      // This will be implemented in future stories
+      
+    } catch (error) {
+      console.error('Error processing message through Agent Squad:', error);
+      // Continue with normal message processing even if Agent Squad fails
+    }
     
   } catch (error) {
     console.error('Erro ao salvar mensagem:', error);

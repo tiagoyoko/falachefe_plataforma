@@ -1,5 +1,4 @@
 // Setup para testes da UAZ API
-import { jest } from '@jest/globals';
 
 // Mock do console para evitar output durante testes
 global.console = {
@@ -12,13 +11,15 @@ global.console = {
 };
 
 // Mock do process.env
-(process.env as any).NODE_ENV = 'test';
-process.env.UAZ_BASE_URL = 'https://test.uazapi.com';
-process.env.UAZ_API_KEY = 'test-api-key';
-process.env.UAZ_API_SECRET = 'test-api-secret';
-process.env.UAZ_WEBHOOK_SECRET = 'test-webhook-secret';
-process.env.UPSTASH_REDIS_REST_URL = 'https://test-redis.com';
-process.env.UPSTASH_REDIS_REST_TOKEN = 'test-redis-token';
+Object.assign(process.env, {
+  NODE_ENV: 'test',
+  UAZ_BASE_URL: 'https://test.uazapi.com',
+  UAZ_API_KEY: 'test-api-key',
+  UAZ_API_SECRET: 'test-api-secret',
+  UAZ_WEBHOOK_SECRET: 'test-webhook-secret',
+  UPSTASH_REDIS_REST_URL: 'https://test-redis.com',
+  UPSTASH_REDIS_REST_TOKEN: 'test-redis-token',
+});
 
 // Mock do crypto para validação de webhook
 jest.mock('crypto', () => ({
