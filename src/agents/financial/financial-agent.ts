@@ -59,6 +59,7 @@ export interface CashFlowAnalysis {
 
 export class FinancialAgent extends BaseAgent {
   public id: string
+  public type: string = 'financial'
   public isActive: boolean
   private intentClassifier: IntentClassifier
   private expenseManager: ExpenseManager

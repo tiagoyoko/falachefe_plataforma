@@ -3,7 +3,8 @@
  * Based on AWS Labs Agent Squad Framework
  */
 
-import { AgentManager, BaseAgent, AgentResponse } from './agent-manager'
+import AgentManager from './agent-manager'
+import { BaseAgent, AgentResponse, AgentState } from './types'
 import { MemorySystem } from './memory-system'
 import { StreamingService, StreamingMessage } from './streaming-service'
 import { v4 as uuidv4 } from 'uuid'
@@ -12,6 +13,8 @@ export interface OrchestratorConfig {
   agentManager: AgentManager
   memorySystem: MemorySystem
   streamingService: StreamingService
+  enableLogging?: boolean
+  logLevel?: string
   classification: {
     model: string
     temperature: number
@@ -56,14 +59,32 @@ export interface IntentClassification {
 export interface ConversationContext {
   conversationId: string
   userId: string
-  lastMessage?: string
-  lastIntent?: string
-  lastAgent?: string
-  userProfile?: Record<string, any>
-  conversationHistory: string[]
-  agentStates: Record<string, any>
-  createdAt: Date
-  updatedAt: Date
+  agentId: string
+  currentIntent: IntentClassification | null
+  conversationHistory: ConversationMessage[]
+  userPreferences: Record<string, any>
+  sessionData: Record<string, any>
+  metadata: {
+    createdAt: Date
+    lastUpdated: Date
+    version: number
+    updates?: ContextUpdate[]
+  }
+}
+
+export interface ConversationMessage {
+  role: 'user' | 'agent' | 'system'
+  content: string
+  timestamp: Date
+  metadata?: Record<string, any>
+}
+
+export interface ContextUpdate {
+  field: string
+  value: unknown
+  timestamp: Date
+  source: 'user' | 'agent' | 'system'
+  metadata?: Record<string, unknown>
 }
 
 export interface OrchestratorResponse {
@@ -113,8 +134,17 @@ export class AgentOrchestrator {
       }
 
       // 4. Process message with selected agent
+      // Find the agent info to get the ID
+      const agentInfo = this.agentManager.getAgentsByType(targetAgent.constructor.name).find(
+        agent => agent.agent === targetAgent
+      )
+      
+      if (!agentInfo) {
+        throw new Error('Agent info not found for selected agent')
+      }
+      
       const agentResponse = await this.agentManager.processMessage(
-        targetAgent.id,
+        agentInfo.id,
         message,
         {
           conversationId: context.conversationId,
@@ -128,28 +158,36 @@ export class AgentOrchestrator {
       await this.updateConversationContext(
         context.conversationId,
         {
-          lastMessage: message,
-          lastIntent: intent.intent,
-          lastAgent: targetAgent.type,
-          conversationHistory: [
-            ...conversationContext.conversationHistory.slice(-this.config.context.maxHistory),
-            message
-          ]
+          currentIntent: intent,
+          userPreferences: {
+            ...conversationContext.userPreferences,
+            lastMessage: message,
+            lastIntent: intent.intent,
+            lastAgent: agentInfo.type
+          },
+        conversationHistory: [
+          ...conversationContext.conversationHistory.slice(-this.config.context.maxHistory),
+          {
+            role: 'user',
+            content: message,
+            timestamp: new Date()
+          }
+        ]
         }
       )
 
       // 6. Send streaming update if needed
       await this.sendStreamingUpdate(
         context.conversationId,
-        targetAgent.id,
+        agentInfo.id,
         agentResponse
       )
 
       const processingTime = Date.now() - startTime
 
       return {
-        agentId: targetAgent.id,
-        agentType: targetAgent.type,
+        agentId: agentInfo.id,
+        agentType: agentInfo.type,
         response: agentResponse.response,
         confidence: agentResponse.confidence,
         processingTime,
@@ -270,25 +308,26 @@ export class AgentOrchestrator {
     for (const rule of this.config.routing.rules) {
       if (this.matchesRule(intent, context, rule)) {
         const agents = this.agentManager.getAgentsByType(rule.agentType)
-        const availableAgent = agents.find(agent => agent.isAvailable())
+        const availableAgent = agents.find(agent => agent.state === AgentState.ACTIVE)
         
         if (availableAgent) {
-          return availableAgent
+          return availableAgent.agent
         }
       }
     }
 
     // Fallback to suggested agent
     const suggestedAgents = this.agentManager.getAgentsByType(intent.suggestedAgent)
-    const availableSuggested = suggestedAgents.find(agent => agent.isAvailable())
+    const availableSuggested = suggestedAgents.find(agent => agent.state === AgentState.ACTIVE)
     
     if (availableSuggested) {
-      return availableSuggested
+      return availableSuggested.agent
     }
 
     // Final fallback
     const fallbackAgents = this.agentManager.getAgentsByType(this.config.routing.fallbackAgent)
-    return fallbackAgents.find(agent => agent.isAvailable()) || null
+    const fallbackAgent = fallbackAgents.find(agent => agent.state === AgentState.ACTIVE)
+    return fallbackAgent ? fallbackAgent.agent : null
   }
 
   private matchesRule(
@@ -364,10 +403,16 @@ export class AgentOrchestrator {
     const context: ConversationContext = {
       conversationId,
       userId: '',
+      agentId: '',
+      currentIntent: null,
       conversationHistory: [],
-      agentStates: {},
-      createdAt: new Date(),
-      updatedAt: new Date()
+      userPreferences: {},
+      sessionData: {},
+      metadata: {
+        createdAt: new Date(),
+        lastUpdated: new Date(),
+        version: 1
+      }
     }
 
     // Merge shared memory data
@@ -377,7 +422,8 @@ export class AgentOrchestrator {
 
     // Merge individual memory data
     for (const memory of individualMemories) {
-      context.agentStates[memory.agentType] = memory.memoryData
+      // Store individual memory data in sessionData
+      context.sessionData[memory.agentType] = memory.memoryData
     }
 
     return context
@@ -441,11 +487,16 @@ export class AgentOrchestrator {
     const context: ConversationContext = {
       conversationId: message.chatId || message.conversationId || 'default',
       userId: message.sender || message.userId || 'unknown',
+      agentId: '',
+      currentIntent: null,
       conversationHistory: [],
-      agentStates: {},
-      userProfile: message.metadata || {},
-      createdAt: new Date(),
-      updatedAt: new Date()
+      userPreferences: message.metadata || {},
+      sessionData: {},
+      metadata: {
+        createdAt: new Date(),
+        lastUpdated: new Date(),
+        version: 1
+      }
     }
     return await this.processMessage(message, context)
   }

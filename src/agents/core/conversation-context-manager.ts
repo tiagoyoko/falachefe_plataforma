@@ -85,7 +85,7 @@ export class ConversationContextManager {
       }
 
       // Deserializar contexto
-      const context = this.deserializeContext(contextData)
+      const context = this.deserializeContext(JSON.stringify(contextData))
       
       // Armazenar em memória ativa
       this.activeContexts.set(conversationId, context)
@@ -131,8 +131,7 @@ export class ConversationContextManager {
       const serializedContext = this.serializeContext(updatedContext)
       await this.memorySystem.setSharedMemory(
         conversationId,
-        'conversation_context',
-        serializedContext
+        { conversation_context: serializedContext }
       )
 
       // Atualizar contexto ativo
@@ -208,8 +207,7 @@ export class ConversationContextManager {
     const serializedContext = this.serializeContext(snapshot.context)
     await this.memorySystem.setSharedMemory(
       conversationId,
-      'conversation_context',
-      serializedContext
+      { conversation_context: serializedContext }
     )
 
     this.logger.log(`Context restored to version ${version} for conversation ${conversationId}`)
@@ -252,7 +250,7 @@ export class ConversationContextManager {
 
   private applyContextUpdate(context: ConversationContext, update: ContextUpdate): void {
     const fields = update.field.split('.')
-    let target: Record<string, unknown> = context
+    let target: Record<string, unknown> = context as unknown as Record<string, unknown>
 
     // Navegar até o campo pai
     for (let i = 0; i < fields.length - 1; i++) {
@@ -273,6 +271,7 @@ export class ConversationContextManager {
     }
     context.metadata.updates.push({
       field: update.field,
+      value: update.value,
       timestamp: update.timestamp,
       source: update.source,
       metadata: update.metadata

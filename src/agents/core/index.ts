@@ -4,7 +4,7 @@
  */
 
 // Main Agent Manager
-export { AgentManager } from './agent-manager'
+export { default as AgentManager } from './agent-manager'
 export { defaultAgentManagerConfig, createAgentManagerConfig } from './agent-manager-config'
 
 // Core Components
@@ -80,4 +80,3 @@ export {
 } from './types'
 
 // Default export for convenience
-export default AgentManager

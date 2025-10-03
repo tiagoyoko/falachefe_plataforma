@@ -19,3 +19,13 @@ Object.assign(process.env, {
 
 // Timeout para testes
 jest.setTimeout(10000);
+
+// Limpar timers após cada teste
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
+beforeEach(() => {
+  jest.useFakeTimers();
+});

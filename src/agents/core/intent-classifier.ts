@@ -691,10 +691,10 @@ export class IntentClassifier {
   private prepareContext(message: string, context: ConversationContext): ClassificationContext {
     return {
       message,
-      lastIntent: context.lastIntent || 'N/A',
-      lastAgent: context.lastAgent || 'N/A',
-      recentHistory: context.conversationHistory.slice(-3).join(' | ') || 'N/A',
-      userType: context.userProfile?.type || 'N/A'
+      lastIntent: 'N/A', // Removed from ConversationContext
+      lastAgent: 'N/A', // Removed from ConversationContext
+      recentHistory: context.conversationHistory.slice(-3).map(msg => msg.content).join(' | ') || 'N/A',
+      userType: 'N/A' // userProfile removed from ConversationContext
     }
   }
 
@@ -712,7 +712,7 @@ export class IntentClassifier {
   }
 
   private generateCacheKey(message: string, context: ConversationContext): string {
-    const contextHash = `${context.conversationId}_${context.userId}_${context.lastIntent || 'none'}`
+    const contextHash = `${context.conversationId}_${context.userId}_none` // lastIntent removed
     return `${message.substring(0, 100)}_${contextHash}`
   }
 

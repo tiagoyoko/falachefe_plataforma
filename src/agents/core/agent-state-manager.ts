@@ -211,10 +211,6 @@ export class AgentStateManager extends EventEmitter {
     return this.getAgentsInState(AgentState.ERROR)
   }
 
-  getRecoveryAttempts(agentId: string): number {
-    return this.recoveryAttempts.get(agentId) || 0
-  }
-
   resetRecoveryAttempts(agentId: string): void {
     this.recoveryAttempts.set(agentId, 0)
   }

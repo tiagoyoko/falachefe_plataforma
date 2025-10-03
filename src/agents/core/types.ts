@@ -60,12 +60,60 @@ export interface AgentInfo {
   metrics: AgentMetrics
 }
 
+// API Response Time Interface
+export interface ApiResponseTime {
+  endpoint: string
+  method: string
+  responseTime: number
+  timestamp: Date
+  statusCode: number
+}
+
+// System Metrics Interface
+export interface SystemMetrics {
+  cpuUsage: number
+  memoryUsage: number
+  diskUsage: number
+  networkLatency: number
+  uptime: number
+  activeConnections: number
+  errorRate: number
+  throughput: number
+  timestamp: Date
+}
+
+// Context History Interface
+export interface ContextHistory {
+  timestamp: Date
+  action: string
+  data: Record<string, unknown>
+  source: 'user' | 'agent' | 'system'
+}
+
+// Agent Configuration Interface
+export interface AgentConfiguration {
+  id: string
+  name: string
+  type: string
+  enabled: boolean
+  priority: number
+  maxConcurrency: number
+  timeout: number
+  retryAttempts: number
+  fallbackAgentId?: string
+  metadata?: Record<string, any>
+}
+
 // Agent Metrics
 export class AgentMetrics {
   totalSelections: number = 0
   totalProcessingTime: number = 0
   averageProcessingTime: number = 0
+  minProcessingTime?: number
+  maxProcessingTime?: number
   totalErrors: number = 0
+  errorRate: number = 0
+  successRate: number = 0
   lastSelectedAt?: Date
   lastErrorAt?: Date
   lastError?: string
@@ -74,12 +122,37 @@ export class AgentMetrics {
   activeConnections: number = 0
   uptime: number = 0
   lastResetAt: Date = new Date()
+  
+  // API Tracking Properties
+  totalApiCalls: number = 0
+  apiCallStatusCodes: Map<number, number> = new Map()
+  apiResponseTimes: ApiResponseTime[] = []
+  apiCallsByEndpoint: Map<string, number> = new Map()
+  apiCallsByStatus: Map<number, number> = new Map()
+  averageApiResponseTime: number = 0
+  
+  // Performance Tracking
+  throughput: number = 0
+  availability: number = 0
+  
+  // Error Tracking
+  errorTypes: Map<string, number> = new Map()
+  
+  // System Metrics
+  cpuUsage: number = 0
+  
+  // Custom Metrics
+  customMetrics: Map<string, number> = new Map()
 
   reset(): void {
     this.totalSelections = 0
     this.totalProcessingTime = 0
     this.averageProcessingTime = 0
+    this.minProcessingTime = undefined
+    this.maxProcessingTime = undefined
     this.totalErrors = 0
+    this.errorRate = 0
+    this.successRate = 0
     this.lastSelectedAt = undefined
     this.lastErrorAt = undefined
     this.lastError = undefined
@@ -88,6 +161,27 @@ export class AgentMetrics {
     this.activeConnections = 0
     this.uptime = 0
     this.lastResetAt = new Date()
+    
+    // Reset API tracking
+    this.totalApiCalls = 0
+    this.apiCallStatusCodes.clear()
+    this.apiResponseTimes = []
+    this.apiCallsByEndpoint.clear()
+    this.apiCallsByStatus.clear()
+    this.averageApiResponseTime = 0
+    
+    // Reset performance tracking
+    this.throughput = 0
+    this.availability = 0
+    
+    // Reset error tracking
+    this.errorTypes.clear()
+    
+    // Reset system metrics
+    this.cpuUsage = 0
+    
+    // Reset custom metrics
+    this.customMetrics.clear()
   }
 
   updateProcessingTime(processingTime: number): void {
@@ -95,6 +189,28 @@ export class AgentMetrics {
     this.averageProcessingTime = this.totalSelections > 0 
       ? this.totalProcessingTime / this.totalSelections 
       : 0
+    
+    // Update min/max processing time
+    if (this.minProcessingTime === undefined || processingTime < this.minProcessingTime) {
+      this.minProcessingTime = processingTime
+    }
+    if (this.maxProcessingTime === undefined || processingTime > this.maxProcessingTime) {
+      this.maxProcessingTime = processingTime
+    }
+  }
+
+  updateErrorRate(): void {
+    this.errorRate = this.totalSelections > 0 ? this.totalErrors / this.totalSelections : 0
+    this.successRate = this.totalSelections > 0 ? (this.totalSelections - this.totalErrors) / this.totalSelections : 0
+  }
+
+  updateThroughput(): void {
+    this.throughput = this.totalSelections > 0 ? this.totalSelections / (this.uptime / 1000 / 60) : 0 // requests per minute
+  }
+
+  updateAvailability(): void {
+    // Simple availability calculation based on error rate
+    this.availability = Math.max(0, 1 - this.errorRate)
   }
 
   updateUptime(): void {
@@ -104,10 +220,12 @@ export class AgentMetrics {
 
 // Base Agent Interface
 export abstract class BaseAgent extends EventEmitter {
+  abstract type: string
   abstract initialize(config: Record<string, any>): Promise<void>
   abstract process(message: string, context: Record<string, any>): Promise<any>
   abstract shutdown(): Promise<void>
   abstract isHealthy(): Promise<boolean>
+  abstract isAvailable(): boolean
   abstract getCapabilities(): string[]
   abstract getCurrentLoad(): number
   abstract getMemoryUsage(): number

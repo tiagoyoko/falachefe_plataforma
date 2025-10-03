@@ -100,7 +100,22 @@ async function initializeAgentOrchestrator(): Promise<AgentOrchestrator> {
       memorySystem: squad.memorySystem,
       streamingService: squad.streamingService,
       enableLogging: true,
-      logLevel: 'info'
+      logLevel: 'info',
+      classification: {
+        model: 'gpt-4o-mini',
+        temperature: 0.7,
+        cacheEnabled: true,
+        cacheTTL: 300
+      },
+      routing: {
+        rules: [],
+        fallbackAgent: 'general'
+      },
+      context: {
+        ttl: 3600,
+        maxHistory: 10,
+        autoCleanup: true
+      }
     });
     
     console.log('✅ Agent Orchestrator initialized');
@@ -364,11 +379,49 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         }
       };
 
+      // Create conversation context
+      const conversationContext = {
+        conversationId: `conv-${message.id}`,
+        userId: message.sender,
+        agentId: 'orchestrator',
+        currentIntent: {
+          intent: 'general',
+          domain: 'general',
+          confidence: 1.0,
+          reasoning: 'Initial message',
+          suggestedAgent: 'orchestrator'
+        },
+        conversationHistory: [{
+          role: 'user' as const,
+          content: orchestratorMessage.text,
+          timestamp: new Date(),
+          metadata: {
+            messageId: message.id,
+            senderId: message.sender
+          }
+        }],
+        metadata: {
+          createdAt: new Date(),
+          lastUpdated: new Date(),
+          version: 1.0,
+          updates: []
+        },
+        userPreferences: {
+          language: 'pt-BR',
+          timezone: 'America/Sao_Paulo'
+        },
+        sessionData: {
+          chatId: orchestratorMessage.chatId,
+          isGroup: orchestratorMessage.isGroup,
+          fromMe: orchestratorMessage.fromMe
+        }
+      };
+
       // Process through Agent Orchestrator
-      const response = await orchestrator.processMessage(orchestratorMessage);
+      const response = await orchestrator.processMessage(orchestratorMessage.text, conversationContext);
       
       console.log('Agent Orchestrator response:', {
-        success: response.success,
+        agentId: response.agentId,
         agentType: response.agentType,
         response: response.response,
         processingTime: response.processingTime,
@@ -376,7 +429,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       });
       
       // Send response back to user via UAZ API if available
-      if (response.success && response.response && !message.fromMe) {
+      if (response.response && !message.fromMe) {
         await sendResponseToUserWithWindowValidation(chat, response.response, owner, token, message.sender);
       }
       
@@ -537,7 +590,7 @@ async function sendResponseToUserWithWindowValidation(
     console.error('Error sending response to user with window validation:', error);
     
     // Se erro é de janela não ativa, tentar enviar template aprovado
-    if (error instanceof UAZError && error.code === 'MESSAGE_NOT_ALLOWED') {
+    if (error instanceof UAZError && error.code === 403) {
       console.log('🪟 Window not active, attempting to send approved template...');
       await sendApprovedTemplate(chat, owner, token, userId);
     } else {

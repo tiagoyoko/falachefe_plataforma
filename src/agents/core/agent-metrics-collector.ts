@@ -99,7 +99,7 @@ export class AgentMetricsCollector extends EventEmitter {
 
   recordApiCall(agentId: string, operation: string, statusCode: number, responseTime: number): void {
     const metrics = this.getOrCreateMetrics(agentId)
-    metrics.totalApiCalls = (metrics.totalApiCalls || 0) + 1
+    metrics.totalApiCalls = metrics.totalApiCalls + 1
     
     // Track status codes
     if (!metrics.apiCallStatusCodes) {
@@ -114,7 +114,8 @@ export class AgentMetricsCollector extends EventEmitter {
     }
     metrics.apiResponseTimes.push({
       timestamp: new Date(),
-      operation,
+      endpoint: operation,
+      method: 'POST', // Default method, should be passed as parameter
       statusCode,
       responseTime
     })
@@ -344,7 +345,7 @@ export class AgentMetricsCollector extends EventEmitter {
     return {
       agentId,
       score: Math.max(0, Math.min(100, score)),
-      metrics: { ...metrics }
+      metrics: metrics
     }
   }
 

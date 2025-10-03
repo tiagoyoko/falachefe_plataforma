@@ -20,9 +20,9 @@ export interface FalachefeAgentSquadConfig {
 }
 
 export class FalachefeAgentSquad {
-  private agentManager: AgentManager
-  private memorySystem: MemorySystem
-  private streamingService: StreamingService
+  public agentManager: AgentManager
+  public memorySystem: MemorySystem
+  public streamingService: StreamingService
   private orchestrator: AgentOrchestrator
   private isInitialized: boolean = false
 
@@ -83,18 +83,29 @@ export class FalachefeAgentSquad {
   private async registerDefaultAgents(): Promise<void> {
     // Register Financial Agent
     const financialAgent = new FinancialAgent({
+      model: 'gpt-4',
+      temperature: 0.7,
+      maxTokens: 2000,
+      retryAttempts: 3,
+      escalationThreshold: 0.8,
+      memoryRetentionDays: 30,
+      learningEnabled: true
+    }, this.memorySystem);
+    
+    // Register the agent with capabilities
+    await this.agentManager.registerAgent(financialAgent, {
       id: 'financial-agent-001',
       type: 'financial',
       name: 'Financial Agent',
       description: 'Handles financial operations and cash flow analysis for Falachefe',
-      capabilities: [
+      version: '1.0.0',
+      specializations: [
         'add_expense',
         'add_revenue', 
         'cashflow_analysis',
         'budget_planning',
         'financial_query'
       ],
-      isActive: true,
       config: {
         model: 'gpt-4o-mini',
         temperature: 0.7,

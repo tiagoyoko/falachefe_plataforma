@@ -27,7 +27,7 @@ describe('WindowControlService', () => {
       connect: jest.fn(),
       disconnect: jest.fn(),
       isReady: jest.fn(() => true),
-    } as any;
+    } as jest.Mocked<RedisClient>;
 
     windowService = new WindowControlService(mockRedis);
   });

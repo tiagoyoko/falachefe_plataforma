@@ -4,7 +4,7 @@ import { generateText } from 'ai'
 
 export class FinancialAgentDirect extends BaseAgent {
   private id: string = 'leo-financial-agent'
-  private type: string = 'financial'
+  public type: string = 'financial'
   private name: string = 'Leo - Mentor Financeiro'
   private description: string = 'Mentor experiente, organizado e confiável. Ajuda empreendedores a entender números, evitar erros financeiros e planejar o caixa.'
   private version: string = '1.0.0'
@@ -650,5 +650,9 @@ O que entra e o que sai - assim você decide com clareza. Como posso ajudá-lo e
 
   get agentConfig(): Record<string, any> {
     return this.config
+  }
+
+  isAvailable(): boolean {
+    return true
   }
 }

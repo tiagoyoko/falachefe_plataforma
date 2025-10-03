@@ -3,7 +3,7 @@
  * Based on AWS Labs Agent Squad Framework
  */
 
-import { BaseAgent } from './agent-manager'
+import { BaseAgent } from './types'
 import { IntentClassification, ConversationContext } from './agent-orchestrator'
 
 export interface AgentRoute {
