@@ -63,7 +63,7 @@ The project already includes several shadcn/ui components (button, dialog, avata
 
 ## What I Want to Build
 
-Basic todo list app with the ability for users to add, remove, update, complete and view todos.
+Leia todos os arquivos da pasta /Users/tiagoyokoyama/Falachefe/docs/business/PRD , /Users/tiagoyokoyama/Falachefe/docs/technical/architecture e /Users/tiagoyokoyama/Falachefe/docs/technical/uazapi
 
 ## Request
 

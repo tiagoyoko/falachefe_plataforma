@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { handleCors, withCors } from "@/lib/cors";
 
 // Rotas que requerem autenticação
 const protectedRoutes = [
@@ -42,9 +43,18 @@ const authApiRoutes = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Handle CORS para rotas de API
+  if (pathname.startsWith('/api/')) {
+    const corsResponse = handleCors(request)
+    if (corsResponse instanceof NextResponse) {
+      return corsResponse
+    }
+  }
+
   // Permitir rotas públicas
   if (publicRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
+    const response = NextResponse.next()
+    return withCors(response, request.headers.get('origin') || undefined)
   }
 
   // Permitir arquivos estáticos e rotas de autenticação

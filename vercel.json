@@ -1,0 +1,42 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://falachefe-plataforma-dq7j.vercel.app"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_APP_URL": "https://falachefe-plataforma-dq7j.vercel.app"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_URL": "https://falachefe-plataforma-dq7j.vercel.app"
+    }
+  }
+}
