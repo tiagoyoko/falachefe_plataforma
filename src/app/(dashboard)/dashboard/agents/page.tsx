@@ -15,7 +15,6 @@ import {
   Edit, 
   Trash2,
   MessageSquare,
-  Users,
   BarChart3,
   MoreHorizontal
 } from "lucide-react";

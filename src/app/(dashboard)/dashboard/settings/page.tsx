@@ -2,25 +2,13 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { 
-  Settings, 
-  Save, 
-  Bell, 
-  Shield, 
-  Globe, 
-  Database,
-  Key,
-  Users,
-  Bot,
-  MessageSquare,
-  AlertTriangle,
-  CheckCircle
+  Save
 } from "lucide-react";
 
 export default function SettingsPage() {

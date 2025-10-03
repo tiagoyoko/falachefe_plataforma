@@ -11,7 +11,6 @@ import {
   Shield, 
   AlertTriangle,
   UserCheck,
-  UserX,
   DollarSign,
   TrendingUp
 } from "lucide-react";

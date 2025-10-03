@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 // POST /api/admin/users/[userId]/notify - Enviar notificação para usuário
 export async function POST(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -17,6 +17,7 @@ export async function POST(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
+    const params = await context.params;
     const { userId } = params;
     const body = await request.json();
     const { message } = body;

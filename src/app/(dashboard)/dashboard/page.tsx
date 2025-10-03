@@ -10,10 +10,7 @@ import {
   BarChart3, 
   Settings, 
   Plus,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertTriangle
+  CheckCircle
 } from "lucide-react";
 
 export default function DashboardPage() {

@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 // PATCH /api/admin/users/[userId] - Ações em usuários específicos
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -17,6 +17,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
+    const params = await context.params;
     const { userId } = params;
     const body = await request.json();
     const { action, planId, message } = body;
