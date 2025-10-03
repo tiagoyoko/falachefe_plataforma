@@ -269,12 +269,6 @@ export interface TemplateResponse {
   error?: string;
 }
 
-export interface UAZError {
-  success: false;
-  error: string;
-  code?: number;
-  details?: any;
-}
 
 export interface UAZConfig {
   baseUrl: string;

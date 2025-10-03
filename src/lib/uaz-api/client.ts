@@ -1,21 +1,25 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { UAZConfig, UAZInstance, UAZWebhook, SendTextMessageRequest, SendMediaMessageRequest, MessageResponse, WebhookPayload, CreateTemplateRequest, TemplateResponse, UAZError } from './types';
-import { UAZError as UAZErrorClass, UAZTimeoutError, UAZRateLimitError } from './errors';
+import { UAZConfig, UAZInstance, UAZWebhook, SendTextMessageRequest, SendMediaMessageRequest, MessageResponse, WebhookPayload, CreateTemplateRequest, TemplateResponse } from './types';
+import { UAZError, UAZTimeoutError, UAZRateLimitError } from './errors';
 import { validateSendTextMessage, validateSendMediaMessage, validateCreateTemplate, validatePhoneNumber, validateMediaUrl, validateBase64 } from './validation';
+import { WindowControlService } from '../window-control/window-service';
+import { MessageValidationResult } from '../window-control/types';
 
 export class UAZClient {
   private httpClient: AxiosInstance;
   private config: UAZConfig;
   private retryCount: number = 0;
   private maxRetries: number = 3;
+  private windowControlService?: WindowControlService;
 
-  constructor(config: UAZConfig) {
+  constructor(config: UAZConfig, windowControlService?: WindowControlService) {
     this.config = {
       timeout: 30000,
       retries: 3,
       ...config,
     };
     this.maxRetries = this.config.retries || 3;
+    this.windowControlService = windowControlService;
 
     this.httpClient = axios.create({
       baseURL: this.config.baseUrl,
@@ -89,7 +93,7 @@ export class UAZClient {
     );
   }
 
-  private handleError(error: any): UAZErrorClass {
+  private handleError(error: any): UAZError {
     if (error.code === 'ECONNABORTED') {
       return new UAZTimeoutError(this.config.timeout || 30000);
     }
@@ -99,22 +103,22 @@ export class UAZClient {
       
       switch (status) {
         case 401:
-          return UAZErrorClass.fromUnauthorized();
+          return new UAZError('Unauthorized', 401);
         case 403:
-          return UAZErrorClass.fromForbidden();
+          return new UAZError('Forbidden', 403);
         case 404:
-          return UAZErrorClass.fromNotFound();
+          return new UAZError('Not Found', 404);
         case 429:
           const retryAfter = error.response.headers['retry-after'];
           return new UAZRateLimitError(parseInt(retryAfter));
         case 408:
-          return UAZErrorClass.fromTimeout();
+          return new UAZError('Request Timeout', 408);
         default:
-          return UAZErrorClass.fromResponse(data);
+          return new UAZError(data?.message || 'Unknown error', status);
       }
     }
 
-    return UAZErrorClass.fromNetworkError(error);
+    return new UAZError('Network error', 0);
   }
 
   // Métodos principais da API
@@ -128,13 +132,13 @@ export class UAZClient {
       const validatedData = validateSendTextMessage(request);
       
       if (!validatePhoneNumber(validatedData.number)) {
-        throw UAZErrorClass.fromValidation('Número de telefone inválido');
+        throw new UAZError('Número de telefone inválido', 400);
       }
 
       const response = await this.httpClient.post('/send/text', validatedData);
       return response.data;
     } catch (error) {
-      if (error instanceof UAZErrorClass) throw error;
+      if (error instanceof UAZError) throw error;
       throw this.handleError(error);
     }
   }
@@ -148,24 +152,24 @@ export class UAZClient {
       const validatedData = validateSendMediaMessage(request);
       
       if (!validatePhoneNumber(validatedData.number)) {
-        throw UAZErrorClass.fromValidation('Número de telefone inválido');
+        throw new UAZError('Número de telefone inválido', 400);
       }
 
       // Validação de mídia
       if (validatedData.media.startsWith('http')) {
         if (!validateMediaUrl(validatedData.media)) {
-          throw UAZErrorClass.fromValidation('URL de mídia inválida');
+          throw new UAZError('URL de mídia inválida', 400);
         }
       } else {
         if (!validateBase64(validatedData.media)) {
-          throw UAZErrorClass.fromValidation('Dados de mídia em base64 inválidos');
+          throw new UAZError('Dados de mídia em base64 inválidos', 400);
         }
       }
 
       const response = await this.httpClient.post('/send/media', validatedData);
       return response.data;
     } catch (error) {
-      if (error instanceof UAZErrorClass) throw error;
+      if (error instanceof UAZError) throw error;
       throw this.handleError(error);
     }
   }
@@ -181,7 +185,7 @@ export class UAZClient {
       const response = await this.httpClient.post('/template/create', validatedData);
       return response.data;
     } catch (error) {
-      if (error instanceof UAZErrorClass) throw error;
+      if (error instanceof UAZError) throw error;
       throw this.handleError(error);
     }
   }
@@ -260,7 +264,7 @@ export class UAZClient {
     try {
       // Validação básica do payload
       if (!payload.event || !payload.instance || !payload.data) {
-        throw UAZErrorClass.fromValidation('Payload do webhook inválido');
+        throw new UAZError('Payload do webhook inválido', 400);
       }
 
       // Aqui seria implementada a lógica de processamento
@@ -275,7 +279,7 @@ export class UAZClient {
       // TODO: Implementar processamento de diferentes tipos de evento
       
     } catch (error) {
-      if (error instanceof UAZErrorClass) throw error;
+      if (error instanceof UAZError) throw error;
       throw this.handleError(error);
     }
   }
@@ -343,5 +347,111 @@ export class UAZClient {
     if (newConfig.timeout) {
       this.httpClient.defaults.timeout = newConfig.timeout;
     }
+  }
+
+  /**
+   * Validar se mensagem pode ser enviada baseada na janela de atendimento
+   */
+  async validateMessageForWindow(
+    userId: string,
+    messageType: 'text' | 'template' | 'media' | 'interactive',
+    templateId?: string
+  ): Promise<MessageValidationResult> {
+    if (!this.windowControlService) {
+      // Se não há controle de janela, permitir todas as mensagens
+      return {
+        isAllowed: true,
+        requiresTemplate: false
+      };
+    }
+
+    return await this.windowControlService.processSystemMessage(
+      userId,
+      messageType,
+      templateId
+    );
+  }
+
+  /**
+   * Processar mensagem do usuário (renovar janela se necessário)
+   */
+  async processUserMessage(userId: string): Promise<void> {
+    if (!this.windowControlService) {
+      return;
+    }
+
+    await this.windowControlService.processUserMessage(userId);
+  }
+
+  /**
+   * Enviar mensagem com validação de janela
+   */
+  async sendMessageWithWindowValidation(
+    messageData: SendTextMessageRequest,
+    owner: string,
+    token: string,
+    userId: string
+  ): Promise<MessageResponse> {
+    // Validar se pode enviar mensagem
+    const validation = await this.validateMessageForWindow(userId, 'text');
+    
+    if (!validation.isAllowed) {
+      throw new UAZError(
+        `Message not allowed: ${validation.reason}`,
+        403
+      );
+    }
+
+    // Enviar mensagem normalmente
+    return await this.sendTextMessage(messageData);
+  }
+
+  /**
+   * Enviar template com validação de janela
+   */
+  async sendTemplateWithWindowValidation(
+    templateData: CreateTemplateRequest,
+    owner: string,
+    token: string,
+    userId: string,
+    templateId: string
+  ): Promise<MessageResponse> {
+    // Validar se pode enviar template
+    const validation = await this.validateMessageForWindow(userId, 'template', templateId);
+    
+    if (!validation.isAllowed) {
+      throw new UAZError(
+        `Template not allowed: ${validation.reason}`,
+        403
+      );
+    }
+
+    // Enviar template normalmente - enviar como mensagem de texto
+    return await this.sendTextMessage({
+      number: owner, // Usar owner como número temporariamente
+      text: templateData.content.body.text
+    });
+  }
+
+  /**
+   * Obter estado da janela de atendimento
+   */
+  async getWindowState(userId: string) {
+    if (!this.windowControlService) {
+      return null;
+    }
+
+    return await this.windowControlService.getWindowState(userId);
+  }
+
+  /**
+   * Verificar se janela está ativa
+   */
+  async isWindowActive(userId: string): Promise<boolean> {
+    if (!this.windowControlService) {
+      return true; // Se não há controle, considerar sempre ativa
+    }
+
+    return await this.windowControlService.isWindowActive(userId);
   }
 }

@@ -4,18 +4,72 @@ import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
 import { FalachefeAgentSquad, createFalachefeAgentSquad, defaultFalachefeConfig } from '@/agents/core/agent-squad-setup';
+import { AgentOrchestrator } from '@/agents/core/agent-orchestrator';
+import { WindowControlService } from '@/lib/window-control/window-service';
+import { RedisClient } from '@/lib/cache/redis-client';
+
+// Redis client instance (singleton)
+let redisClient: RedisClient | null = null;
+
+// Window Control Service instance (singleton)
+let windowControlService: WindowControlService | null = null;
 
 // Configuração do cliente UAZ
-const uazClient = new UAZClient({
-  baseUrl: process.env.UAZ_BASE_URL || 'https://falachefe.uazapi.com',
-  apiKey: process.env.UAZ_API_KEY || '',
-  apiSecret: process.env.UAZ_API_SECRET || '',
-  webhookSecret: process.env.UAZ_WEBHOOK_SECRET,
-  timeout: 30000,
-});
+let uazClient: UAZClient | null = null;
 
 // Agent Squad instance (singleton)
 let agentSquad: FalachefeAgentSquad | null = null;
+
+// Agent Orchestrator instance (singleton)
+let agentOrchestrator: AgentOrchestrator | null = null;
+
+/**
+ * Initialize Redis Client if not already initialized
+ */
+async function initializeRedisClient(): Promise<RedisClient> {
+  if (!redisClient) {
+    console.log('🗄️ Initializing Redis Client...');
+    redisClient = new RedisClient({
+      url: process.env.UPSTASH_REDIS_REST_URL || '',
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+    });
+    await redisClient.connect();
+    console.log('✅ Redis Client initialized');
+  }
+  return redisClient;
+}
+
+/**
+ * Initialize Window Control Service if not already initialized
+ */
+async function initializeWindowControlService(): Promise<WindowControlService> {
+  if (!windowControlService) {
+    console.log('🪟 Initializing Window Control Service...');
+    const redis = await initializeRedisClient();
+    windowControlService = new WindowControlService(redis);
+    console.log('✅ Window Control Service initialized');
+  }
+  return windowControlService;
+}
+
+/**
+ * Initialize UAZ Client if not already initialized
+ */
+async function initializeUAZClient(): Promise<UAZClient> {
+  if (!uazClient) {
+    console.log('🔌 Initializing UAZ Client...');
+    const windowService = await initializeWindowControlService();
+    uazClient = new UAZClient({
+      baseUrl: process.env.UAZ_BASE_URL || 'https://falachefe.uazapi.com',
+      apiKey: process.env.UAZ_API_KEY || '',
+      apiSecret: process.env.UAZ_API_SECRET || '',
+      webhookSecret: process.env.UAZ_WEBHOOK_SECRET,
+      timeout: 30000,
+    }, windowService);
+    console.log('✅ UAZ Client initialized');
+  }
+  return uazClient;
+}
 
 /**
  * Initialize Agent Squad if not already initialized
@@ -28,6 +82,30 @@ async function initializeAgentSquad(): Promise<FalachefeAgentSquad> {
     console.log('✅ Agent Squad initialized');
   }
   return agentSquad;
+}
+
+/**
+ * Initialize Agent Orchestrator if not already initialized
+ */
+async function initializeAgentOrchestrator(): Promise<AgentOrchestrator> {
+  if (!agentOrchestrator) {
+    console.log('🎯 Initializing Agent Orchestrator...');
+    
+    // Initialize Agent Squad first
+    const squad = await initializeAgentSquad();
+    
+    // Create orchestrator with Agent Squad components
+    agentOrchestrator = new AgentOrchestrator({
+      agentManager: squad.agentManager,
+      memorySystem: squad.memorySystem,
+      streamingService: squad.streamingService,
+      enableLogging: true,
+      logLevel: 'info'
+    });
+    
+    console.log('✅ Agent Orchestrator initialized');
+  }
+  return agentOrchestrator;
 }
 
 /**
@@ -72,10 +150,10 @@ export async function POST(request: NextRequest) {
     // Obter payload bruto para validação de assinatura
     const rawBody = await request.text();
     
-    // Obter assinatura do header
-    const signature = request.headers.get('x-uaz-signature') || 
-                     request.headers.get('x-signature') || 
-                     request.headers.get('signature') || '';
+    // Obter assinatura do header (para validação futura)
+    const _signature = request.headers.get('x-uaz-signature') || 
+                      request.headers.get('x-signature') || 
+                      request.headers.get('signature') || '';
 
     // Validação de assinatura desabilitada para testes
     console.log('Webhook received - signature validation skipped for testing');
@@ -243,6 +321,15 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
   });
 
   try {
+    // Inicializar UAZ Client com controle de janela
+    const uazClientInstance = await initializeUAZClient();
+    
+    // Processar mensagem do usuário (renovar janela se necessário)
+    if (!message.fromMe) {
+      await uazClientInstance.processUserMessage(message.sender);
+      console.log('🪟 User message processed, window renewed if needed');
+    }
+
     // Salvar mensagem no banco de dados
     const result = await MessageService.processIncomingMessage(message, chat, owner);
     
@@ -253,39 +340,49 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
-    // Process message through Agent Squad
+    // Process message through Agent Orchestrator
     try {
-      const squad = await initializeAgentSquad();
+      const orchestrator = await initializeAgentOrchestrator();
       
-      // Convert UAZ message to Agent Squad format
-      const agentMessage = {
+      // Convert UAZ message to orchestrator format
+      const orchestratorMessage = {
         id: message.id,
-        text: message.text || message.content,
+        text: message.text || message.content || '',
         type: message.type || 'text',
         sender: message.sender,
         chatId: message.chatid,
         timestamp: message.messageTimestamp,
-        isGroup: message.isGroup,
-        fromMe: message.fromMe,
+        isGroup: message.isGroup || false,
+        fromMe: message.fromMe || false,
         metadata: {
           messageId: message.messageid,
           senderName: message.senderName,
           chatName: chat.name,
-          owner: owner
+          owner: owner,
+          uazMessageId: message.id,
+          uazChatId: chat.id
         }
       };
 
-      // Process through Agent Squad orchestrator
-      const response = await squad.processMessage(agentMessage);
+      // Process through Agent Orchestrator
+      const response = await orchestrator.processMessage(orchestratorMessage);
       
-      console.log('Agent Squad response:', response);
+      console.log('Agent Orchestrator response:', {
+        success: response.success,
+        agentType: response.agentType,
+        response: response.response,
+        processingTime: response.processingTime,
+        confidence: response.confidence
+      });
       
-      // TODO: Send response back to user via UAZ API
-      // This will be implemented in future stories
+      // Send response back to user via UAZ API if available
+      if (response.success && response.response && !message.fromMe) {
+        await sendResponseToUserWithWindowValidation(chat, response.response, owner, token, message.sender);
+      }
       
     } catch (error) {
-      console.error('Error processing message through Agent Squad:', error);
-      // Continue with normal message processing even if Agent Squad fails
+      console.error('Error processing message through Agent Orchestrator:', error);
+      // Continue with normal message processing even if orchestrator fails
     }
     
   } catch (error) {
@@ -333,7 +430,7 @@ async function handleConnectionEvent(data: UAZWebhookPayload): Promise<void> {
  * Processa eventos de presença
  */
 async function handlePresenceEvent(data: { event: UAZPresenceEvent; owner: string; token: string }): Promise<void> {
-  const { event, owner, token } = data;
+  const { event, owner, token: _token } = data;
   
   console.log('Processing presence event:', {
     chat: event.Chat,
@@ -348,7 +445,7 @@ async function handlePresenceEvent(data: { event: UAZPresenceEvent; owner: strin
     broadcastListOwner: event.BroadcastListOwner,
     broadcastRecipients: event.BroadcastRecipients,
     owner: owner,
-    token: token ? '***' + token.slice(-4) : 'N/A',
+    token: _token ? '***' + _token.slice(-4) : 'N/A',
   });
 
   // TODO: Atualizar status de presença do usuário
@@ -390,4 +487,146 @@ async function handleGroupsEvent(data: UAZWebhookPayload): Promise<void> {
 
   // TODO: Atualizar informações do grupo
   // TODO: Gerenciar permissões e configurações
+}
+
+/**
+ * Envia resposta para o usuário via UAZ API com validação de janela
+ */
+async function sendResponseToUserWithWindowValidation(
+  chat: UAZChat,
+  response: string,
+  owner: string,
+  token: string,
+  userId: string
+): Promise<void> {
+  try {
+    console.log('Sending response to user with window validation:', {
+      chatId: chat.id,
+      chatName: chat.name,
+      responseLength: response.length,
+      owner: owner,
+      userId: userId
+    });
+
+    // Obter UAZ Client com controle de janela
+    const uazClientInstance = await initializeUAZClient();
+
+    // Enviar mensagem via UAZ API com validação de janela
+    const messageData = {
+      chatId: chat.id,
+      number: chat.id, // Usar chatId como number
+      text: response,
+      type: 'text'
+    };
+
+    const result = await uazClientInstance.sendMessageWithWindowValidation(
+      messageData, 
+      owner, 
+      token, 
+      userId
+    );
+    
+    console.log('Response sent successfully with window validation:', {
+      messageId: result.data?.id,
+      status: result.data?.status,
+      chatId: chat.id,
+      userId: userId
+    });
+
+  } catch (error) {
+    console.error('Error sending response to user with window validation:', error);
+    
+    // Se erro é de janela não ativa, tentar enviar template aprovado
+    if (error instanceof UAZError && error.code === 'MESSAGE_NOT_ALLOWED') {
+      console.log('🪟 Window not active, attempting to send approved template...');
+      await sendApprovedTemplate(chat, owner, token, userId);
+    } else {
+      // Não falhar o processamento por erro de envio
+      console.error('Failed to send response:', error);
+    }
+  }
+}
+
+/**
+ * Envia template aprovado quando janela não está ativa
+ */
+async function sendApprovedTemplate(
+  chat: UAZChat,
+  owner: string,
+  token: string,
+  userId: string
+): Promise<void> {
+  try {
+    const uazClientInstance = await initializeUAZClient();
+    
+    // Usar template de confirmação
+    const templateData = {
+      name: 'confirmation',
+      category: 'utility' as const,
+      language: 'pt_BR',
+      content: {
+        body: {
+          text: 'Recebemos sua mensagem. Em breve retornaremos.'
+        }
+      }
+    };
+
+    const result = await uazClientInstance.sendTemplateWithWindowValidation(
+      templateData,
+      owner,
+      token,
+      userId,
+      'confirmation'
+    );
+    
+    console.log('Approved template sent successfully:', {
+      messageId: result.data?.id,
+      status: result.data?.status,
+      chatId: chat.id,
+      templateId: 'confirmation'
+    });
+
+  } catch (error) {
+    console.error('Error sending approved template:', error);
+  }
+}
+
+/**
+ * Envia resposta para o usuário via UAZ API (método legado)
+ */
+async function sendResponseToUser(
+  chat: UAZChat,
+  response: string,
+  owner: string,
+  token: string
+): Promise<void> {
+  try {
+    console.log('Sending response to user (legacy):', {
+      chatId: chat.id,
+      chatName: chat.name,
+      responseLength: response.length,
+      owner: owner
+    });
+
+    // Obter UAZ Client
+    const uazClientInstance = await initializeUAZClient();
+
+    // Enviar mensagem via UAZ API
+    const messageData = {
+      number: chat.id,
+      text: response
+    };
+
+    const result = await uazClientInstance.sendTextMessage(messageData);
+    
+    console.log('Response sent successfully:', {
+      messageId: result.data?.id,
+      status: result.data?.status,
+      chatId: chat.id
+    });
+
+  } catch (error) {
+    console.error('Error sending response to user:', error);
+    // Não falhar o processamento por erro de envio
+  }
 }

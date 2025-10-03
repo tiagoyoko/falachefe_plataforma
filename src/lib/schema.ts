@@ -202,3 +202,46 @@ export type {
   StripeWebhook,
   NewStripeWebhook,
 } from './billing-schema';
+
+// Financial Categories table
+export const financialCategories = pgTable("financial_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }), // Hex color code
+  isDefault: boolean("is_default").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  userId: varchar("user_id", { length: 100 }), // NULL for global categories
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Agent Squad Financial Data table (from migration)
+export const agentSquadFinancialData = pgTable("agent_squad_financial_data", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: varchar("type", { length: 20 }).notNull(),
+  amount: integer("amount").notNull(), // Stored in cents
+  description: text("description").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  date: timestamp("date").notNull(),
+  userId: varchar("user_id", { length: 100 }).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations
+export const financialCategoriesRelations = relations(financialCategories, ({ one }) => ({
+  company: one(companies, {
+    fields: [financialCategories.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const agentSquadFinancialDataRelations = relations(agentSquadFinancialData, ({ one }) => ({
+  category: one(financialCategories, {
+    fields: [agentSquadFinancialData.category],
+    references: [financialCategories.name],
+  }),
+}));

@@ -1,5 +1,5 @@
 import { UAZClient } from './client';
-import { CreateTemplateRequest, TemplateResponse, UAZError } from './types';
+import { CreateTemplateRequest, TemplateResponse } from './types';
 import { UAZError as UAZErrorClass } from './errors';
 import { validateCreateTemplate } from './validation';
 

@@ -3,7 +3,9 @@
  * Based on AWS Labs Agent Squad Framework
  */
 
-import { AgentManager, AgentConfig } from './agent-manager'
+import { AgentManager } from './agent-manager'
+import { AgentManagerConfig, AgentMetadata } from './types'
+import { defaultAgentManagerConfig } from './agent-manager-config'
 import { MemorySystem, MemoryConfig } from './memory-system'
 import { StreamingService, StreamingConfig } from './streaming-service'
 import { AgentOrchestrator, OrchestratorConfig } from './agent-orchestrator'
@@ -13,7 +15,8 @@ export interface FalachefeAgentSquadConfig {
   memory: MemoryConfig
   streaming: StreamingConfig
   orchestrator: Omit<OrchestratorConfig, 'agentManager' | 'memorySystem' | 'streamingService'>
-  agents: AgentConfig[]
+  agents: AgentMetadata[]
+  agentManager: AgentManagerConfig
 }
 
 export class FalachefeAgentSquad {
@@ -27,7 +30,7 @@ export class FalachefeAgentSquad {
     // Initialize core systems
     this.memorySystem = new MemorySystem(config.memory)
     this.streamingService = new StreamingService(config.streaming)
-    this.agentManager = new AgentManager()
+    this.agentManager = new AgentManager(config.agentManager)
     
     // Initialize orchestrator
     this.orchestrator = new AgentOrchestrator({
@@ -99,7 +102,23 @@ export class FalachefeAgentSquad {
       }
     })
 
-    await this.agentManager.registerAgent(financialAgent)
+    await this.agentManager.registerAgent(financialAgent, {
+      id: 'financial-agent-001',
+      type: 'financial',
+      name: 'Financial Agent',
+      description: 'Handles financial operations and cash flow analysis for Falachefe',
+      version: '1.0.0',
+      weight: 1,
+      specializations: ['budget_planning', 'cashflow_analysis'],
+      config: {
+        model: 'gpt-4o-mini',
+        temperature: 0.7,
+        maxTokens: 1000
+      },
+      autoRecovery: true,
+      maxRetries: 3,
+      timeout: 30000
+    })
 
     // Register additional agents from config
     for (const agentConfig of this.config.agents) {
@@ -185,10 +204,11 @@ export class FalachefeAgentSquad {
     memoryConnected: boolean
     streamingConnected: boolean
   } {
+    const agentStats = this.agentManager.getAgentStats()
     return {
       isInitialized: this.isInitialized,
-      agentsCount: this.agentManager.getAgentsCount(),
-      activeAgentsCount: this.agentManager.getActiveAgentsCount(),
+      agentsCount: agentStats.totalAgents,
+      activeAgentsCount: agentStats.activeAgents,
       memoryConnected: this.memorySystem.isConnected,
       streamingConnected: this.streamingService.isConnected('')
     }
@@ -252,18 +272,23 @@ export const defaultFalachefeConfig: FalachefeAgentSquadConfig = {
       autoCleanup: true
     }
   },
+  agentManager: defaultAgentManagerConfig,
   agents: [
     {
       id: 'financial-agent-001',
       type: 'financial',
       name: 'Financial Agent',
       description: 'Handles financial operations and cash flow analysis',
-      capabilities: ['add_expense', 'add_revenue', 'cashflow_analysis', 'budget_planning'],
-      isActive: true,
+      version: '1.0.0',
+      weight: 1,
+      specializations: ['budget_planning', 'cashflow_analysis'],
       config: {
         model: 'gpt-4o-mini',
         temperature: 0.7
-      }
+      },
+      autoRecovery: true,
+      maxRetries: 3,
+      timeout: 30000
     }
   ]
 }

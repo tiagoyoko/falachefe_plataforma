@@ -16,7 +16,6 @@ export type {
   WebhookPayload,
   CreateTemplateRequest,
   TemplateResponse,
-  UAZError as UAZErrorType,
   UAZConfig,
 } from './types';
 
