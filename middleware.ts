@@ -13,12 +13,23 @@ const protectedRoutes = [
   "/settings"
 ];
 
+// Rotas que requerem onboarding completo
+const onboardingRequiredRoutes = [
+  "/dashboard",
+  "/admin",
+  "/agents",
+  "/subscribers",
+  "/templates",
+  "/settings"
+];
+
 // Rotas que são públicas
 const publicRoutes = [
   "/",
   "/login",
   "/signup",
-  "/auth"
+  "/auth",
+  "/onboarding"
 ];
 
 // Rotas de API que requerem autenticação

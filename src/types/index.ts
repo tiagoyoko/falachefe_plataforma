@@ -12,6 +12,8 @@ export type {
   NewMessage,
   Template,
   NewTemplate,
+  UserOnboarding,
+  NewUserOnboarding,
 } from '../lib/schema';
 
 export type {
@@ -220,6 +222,49 @@ export interface PaginatedResponse<T = unknown> {
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
+  };
+}
+
+// Onboarding types
+export interface OnboardingData {
+  // Dados pessoais
+  firstName: string;
+  lastName: string;
+  
+  // Dados da empresa
+  companyName: string;
+  position: string;
+  companySize: '1-10' | '11-50' | '51-200' | '201-1000' | '1000+';
+  industry: string;
+  
+  // Dados de contato
+  whatsappPhone: string;
+  
+  // Metadados
+  completedAt?: Date;
+  isCompleted: boolean;
+}
+
+export interface OnboardingStep {
+  id: string;
+  title: string;
+  description: string;
+  fields: OnboardingField[];
+  isOptional?: boolean;
+}
+
+export interface OnboardingField {
+  name: keyof OnboardingData;
+  type: 'text' | 'select' | 'textarea';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
+  validation?: {
+    pattern?: string;
+    minLength?: number;
+    maxLength?: number;
+    custom?: (value: string) => string | null;
   };
 }
 

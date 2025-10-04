@@ -27,6 +27,7 @@ export const contextTypeEnum = pgEnum('context_type', ['user_intent', 'business_
 export const learningTypeEnum = pgEnum('learning_type', ['response_pattern', 'user_behavior', 'error_recovery', 'optimization']);
 export const subscriptionPlanEnum = pgEnum('subscription_plan', ['starter', 'professional', 'enterprise']);
 export const roleEnum = pgEnum('role', ['super_admin', 'manager', 'analyst', 'viewer']);
+export const companySizeEnum = pgEnum('company_size', ['1-10', '11-50', '51-200', '201-1000', '1000+']);
 
 // Companies (Empresas clientes)
 export const companies = pgTable("companies", {
@@ -184,6 +185,8 @@ export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
 export type Template = typeof templates.$inferSelect;
 export type NewTemplate = typeof templates.$inferInsert;
+export type UserOnboarding = typeof userOnboarding.$inferSelect;
+export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
 
 // Re-export billing types
 export type {
@@ -227,6 +230,23 @@ export const agentSquadFinancialData = pgTable("agent_squad_financial_data", {
   date: timestamp("date").notNull(),
   userId: varchar("user_id", { length: 100 }).notNull(),
   metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// User Onboarding table
+export const userOnboarding = pgTable("user_onboarding", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 100 }).unique().notNull(), // Better Auth user ID
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  position: varchar("position", { length: 255 }).notNull(),
+  companySize: companySizeEnum("company_size").notNull(),
+  industry: varchar("industry", { length: 255 }).notNull(),
+  whatsappPhone: varchar("whatsapp_phone", { length: 20 }).notNull(),
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
