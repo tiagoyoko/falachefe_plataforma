@@ -1,8 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { 
   MessageSquare, 
   Bot, 
@@ -14,6 +18,56 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!isPending && session) {
+      const checkOnboarding = async () => {
+        try {
+          const res = await fetch("/api/onboarding/status");
+          if (res.ok) {
+            const data = await res.json();
+            setOnboardingStatus(data.isCompleted);
+          } else {
+            // Handle error or assume not completed
+            setOnboardingStatus(false);
+          }
+        } catch (error) {
+          console.error("Failed to fetch onboarding status:", error);
+          setOnboardingStatus(false);
+        }
+      };
+      checkOnboarding();
+    } else if (!isPending && !session) {
+      router.push("/login");
+    }
+  }, [session, isPending, router]);
+
+  useEffect(() => {
+    if (onboardingStatus !== null) {
+      if (onboardingStatus) {
+        // Onboarding completed, show dashboard content
+        // Continue to render the dashboard
+      } else {
+        // Onboarding not completed, redirect to onboarding page
+        router.push("/onboarding");
+      }
+    }
+  }, [onboardingStatus, router]);
+
+  if (isPending || onboardingStatus === null) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-64px)]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Should be redirected by the first useEffect
+  }
   return (
     <div className="flex-1 space-y-6 p-6">
       {/* Header */}
