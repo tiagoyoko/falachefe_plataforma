@@ -4,9 +4,11 @@ import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/auth/user-profile";
 import { useSession } from "@/lib/auth-client";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import { Send, Plus, MessageSquare, Bot, User, Copy, Check } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 const H1: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
   <h1 className="mt-2 mb-3 text-2xl font-bold" {...props} />
@@ -130,9 +132,66 @@ export default function ChatPage() {
   const { data: session, isPending } = useSession();
   const { messages, sendMessage, status } = useChat();
   const [input, setInput] = useState("");
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const copyToClipboard = async (text: string, messageId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(messageId);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || status === "streaming") return;
+    
+    sendMessage({ role: "user", parts: [{ type: "text", text }] });
+    setInput("");
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  };
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [input]);
 
   if (isPending) {
-    return <div className="container mx-auto px-4 py-12">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   if (!session) {
@@ -146,61 +205,149 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b">
-          <h1 className="text-2xl font-bold">AI Chat</h1>
-          <span className="text-sm text-muted-foreground">
-            Welcome, {session.user.name}!
-          </span>
+    <div className="flex flex-col h-screen bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-6 w-6" />
+          <h1 className="text-lg font-semibold">Chat</h1>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // Reset chat functionality
+            window.location.reload();
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Nova conversa
+        </Button>
+      </div>
 
-        <div className="min-h-[50vh] overflow-y-auto space-y-4 mb-4">
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground">
-              Start a conversation with AI
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Bot className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-2">Como posso ajudar você hoje?</h2>
+              <p className="text-muted-foreground max-w-md">
+                Faça uma pergunta ou comece uma conversa. Estou aqui para ajudar com qualquer dúvida que você tenha.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-4 ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {message.role === "assistant" && (
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Bot className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+                  
+                  <div
+                    className={`max-w-[80%] ${
+                      message.role === "user" ? "order-first" : ""
+                    }`}
+                  >
+                    <div
+                      className={`rounded-2xl px-4 py-3 ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground ml-auto"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <div className="prose prose-sm max-w-none">
+                        {renderMessageContent(message as MaybePartsMessage)}
+                      </div>
+                    </div>
+                    
+                    {/* Copy button for assistant messages */}
+                    {message.role === "assistant" && (
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const text = renderMessageContent(message as MaybePartsMessage);
+                            if (typeof text === "string") {
+                              copyToClipboard(text, message.id);
+                            } else {
+                              copyToClipboard(JSON.stringify(text), message.id);
+                            }
+                          }}
+                          className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          {copiedMessageId === message.id ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {message.role === "user" && (
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-primary-foreground" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              
+              {status === "streaming" && (
+                <div className="flex gap-4 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Bot className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="bg-muted rounded-2xl px-4 py-3">
+                    <Spinner size="sm" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`p-3 rounded-lg ${
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
-                  : "bg-muted max-w-[80%]"
-              }`}
-            >
-              <div className="text-sm font-medium mb-1">
-                {message.role === "user" ? "You" : "AI"}
-              </div>
-              <div>{renderMessageContent(message as MaybePartsMessage)}</div>
-            </div>
-          ))}
+          <div ref={messagesEndRef} />
         </div>
+      </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = input.trim();
-            if (!text) return;
-            sendMessage({ role: "user", parts: [{ type: "text", text }] });
-            setInput("");
-          }}
-          className="flex gap-2"
-        >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <Button
-            type="submit"
-            disabled={!input.trim() || status === "streaming"}
-          >
-            Send
-          </Button>
-        </form>
+      {/* Input Area */}
+      <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-3xl mx-auto p-4">
+          <form onSubmit={handleSubmit} className="relative">
+            <div className="flex items-end gap-2 p-3 border rounded-2xl bg-background focus-within:ring-2 focus-within:ring-ring">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Digite sua mensagem..."
+                className="flex-1 resize-none border-0 outline-none bg-transparent placeholder:text-muted-foreground min-h-[24px] max-h-[200px]"
+                rows={1}
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!input.trim() || status === "streaming"}
+                className="rounded-xl"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </form>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Pressione Enter para enviar, Shift + Enter para nova linha
+          </p>
+        </div>
       </div>
     </div>
   );

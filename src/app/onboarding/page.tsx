@@ -128,7 +128,7 @@ export default function OnboardingPage() {
       });
 
       if (response.ok) {
-        router.push('/dashboard');
+        router.push('/chat');
       } else {
         const error = await response.json();
         console.error('Erro ao salvar onboarding:', error);
