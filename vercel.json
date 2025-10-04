@@ -10,7 +10,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://falachefe-plataforma-dq7j.vercel.app"
+          "value": "https://falachefe.app.br"
         },
         {
           "key": "Access-Control-Allow-Methods",
@@ -32,11 +32,11 @@
     }
   ],
   "env": {
-    "NEXT_PUBLIC_APP_URL": "https://falachefe-plataforma-dq7j.vercel.app"
+    "NEXT_PUBLIC_APP_URL": "https://falachefe.app.br"
   },
   "build": {
     "env": {
-      "NEXT_PUBLIC_APP_URL": "https://falachefe-plataforma-dq7j.vercel.app"
+      "NEXT_PUBLIC_APP_URL": "https://falachefe.app.br"
     }
   }
 }

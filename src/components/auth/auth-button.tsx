@@ -1,7 +1,8 @@
 "use client";
 
-import { useSession, signIn, signOut } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export function AuthButton() {
   const { data: session, isPending } = useSession();
@@ -24,13 +25,10 @@ export function AuthButton() {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" onClick={() => signIn.social({ provider: "google" })}>
-        Entrar com Google
-      </Button>
-      <Button onClick={() => signIn.email({ email: "", password: "", callbackURL: "/dashboard" })}>
+    <Button asChild size="lg" className="text-lg px-8 py-6">
+      <Link href="/login">
         Entrar
-      </Button>
-    </div>
+      </Link>
+    </Button>
   );
 }

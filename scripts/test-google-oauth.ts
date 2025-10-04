@@ -1,33 +1,50 @@
+#!/usr/bin/env tsx
+
+/**
+ * Script para testar configuração do Google OAuth
+ */
+
 import { auth } from "../src/lib/auth";
 
-console.log("🔧 Testando configuração do Google OAuth...");
+async function testGoogleOAuth() {
+  console.log("🔍 Testando configuração do Google OAuth...\n");
 
-// Verificar se o auth está configurado corretamente
-console.log("1. Verificando configuração do Better Auth:");
-console.log("   - Base URL:", auth.config.baseURL);
-console.log("   - Social Providers:", Object.keys(auth.config.socialProviders || {}));
+  // Verificar variáveis de ambiente
+  console.log("📋 Variáveis de Ambiente:");
+  console.log(`GOOGLE_CLIENT_ID: ${process.env.GOOGLE_CLIENT_ID ? "✅ Configurado" : "❌ Não configurado"}`);
+  console.log(`GOOGLE_CLIENT_SECRET: ${process.env.GOOGLE_CLIENT_SECRET ? "✅ Configurado" : "❌ Não configurado"}`);
+  console.log(`NEXT_PUBLIC_APP_URL: ${process.env.NEXT_PUBLIC_APP_URL || "❌ Não configurado"}`);
+  console.log(`BETTER_AUTH_SECRET: ${process.env.BETTER_AUTH_SECRET ? "✅ Configurado" : "❌ Não configurado"}\n`);
 
-// Verificar se o Google está configurado
-if (auth.config.socialProviders?.google) {
-  console.log("   ✅ Google OAuth configurado");
-  console.log("   - Client ID:", auth.config.socialProviders.google.clientId ? "***" : "❌ Não definido");
-  console.log("   - Client Secret:", auth.config.socialProviders.google.clientSecret ? "***" : "❌ Não definido");
-} else {
-  console.log("   ❌ Google OAuth não configurado");
+  // Verificar configuração do Better Auth
+  console.log("🔧 Configuração do Better Auth:");
+  try {
+    const authConfig = auth;
+    console.log("✅ Better Auth configurado corretamente");
+    console.log(`Base URL: ${process.env.NEXT_PUBLIC_APP_URL}`);
+    
+    if (authConfig.socialProviders?.google) {
+      console.log("✅ Google OAuth configurado no Better Auth");
+      console.log(`Client ID: ${authConfig.socialProviders.google.clientId?.substring(0, 20)}...`);
+    } else {
+      console.log("❌ Google OAuth não configurado no Better Auth");
+    }
+  } catch (error) {
+    console.log("❌ Erro na configuração do Better Auth:", error);
+  }
+
+  console.log("\n📝 Instruções para configurar Google OAuth:");
+  console.log("1. Acesse: https://console.developers.google.com/");
+  console.log("2. Selecione seu projeto ou crie um novo");
+  console.log("3. Vá em 'APIs e Serviços' > 'Credenciais'");
+  console.log("4. Clique no Client ID do OAuth 2.0");
+  console.log("5. Em 'URIs de redirecionamento autorizados', adicione:");
+  console.log(`   - ${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`);
+  console.log("6. Em 'Origens JavaScript autorizadas', adicione:");
+  console.log(`   - ${process.env.NEXT_PUBLIC_APP_URL}`);
+  console.log("\n🔗 URLs que devem estar configuradas no Google Console:");
+  console.log(`- Redirect URI: ${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`);
+  console.log(`- JavaScript Origins: ${process.env.NEXT_PUBLIC_APP_URL}`);
 }
 
-// Verificar rotas disponíveis
-console.log("\n2. Verificando rotas disponíveis:");
-console.log("   - Email/Password:", auth.config.emailAndPassword?.enabled ? "✅ Habilitado" : "❌ Desabilitado");
-console.log("   - Social Providers:", auth.config.socialProviders ? "✅ Configurado" : "❌ Não configurado");
-
-// Testar se conseguimos criar um cliente de teste
-console.log("\n3. Testando criação de cliente:");
-try {
-  const testClient = auth.api;
-  console.log("   ✅ Cliente de API criado com sucesso");
-} catch (error) {
-  console.log("   ❌ Erro ao criar cliente:", error);
-}
-
-console.log("\n🏁 Teste concluído!");
+testGoogleOAuth().catch(console.error);
