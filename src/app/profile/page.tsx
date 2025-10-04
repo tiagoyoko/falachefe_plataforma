@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,34 +10,52 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Spinner } from "@/components/ui/spinner";
 import { User, Mail, Calendar, Shield, Edit, Save, X } from "lucide-react";
 
+interface OnboardingData {
+  firstName: string;
+  lastName: string;
+  companyName: string;
+  position: string;
+  companySize: string;
+  industry: string;
+  whatsappPhone: string;
+  isCompleted: boolean;
+  completedAt?: string;
+}
+
 export default function ProfilePage() {
+  const { data: session, isPending: isSessionPending } = useSession();
+  const router = useRouter();
+  
   // Estados para controle de edição
   const [isEditing, setIsEditing] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
 
   // Dados capturados pela plataforma sobre o usuário e empresa
   const [userData, setUserData] = useState({
     personalInfo: {
-      name: "João Silva",
-      email: "joao@empresa.com.br",
-      phone: "+55 11 99999-9999",
-      position: "CEO",
-      department: "Diretoria",
+      name: "",
+      email: "",
+      phone: "",
+      position: "",
+      department: "",
       image: null,
-      role: "Administrador",
-      memberSince: "Janeiro 2024",
-      lastLogin: "Hoje às 14:30"
+      role: "",
+      memberSince: "",
+      lastLogin: ""
     },
     companyInfo: {
-      name: "TechCorp Ltda",
-      cnpj: "12.345.678/0001-90",
-      industry: "Tecnologia",
-      size: "50-100 funcionários",
-      website: "https://techcorp.com.br",
-      address: "São Paulo, SP",
+      name: "",
+      cnpj: "",
+      industry: "",
+      size: "",
+      website: "",
+      address: "",
       plan: "Professional"
     },
     preferences: {
@@ -46,12 +66,81 @@ export default function ProfilePage() {
       notificationPreferences: "Email + WhatsApp"
     },
     dataInsights: {
-      totalInteractions: 1247,
-      avgResponseTime: "2.3 minutos",
-      satisfactionScore: 4.8,
-      lastDataUpdate: "Hoje às 14:30"
+      totalInteractions: 0,
+      avgResponseTime: "0 minutos",
+      satisfactionScore: 0,
+      lastDataUpdate: ""
     }
   });
+
+  // Carregar dados do usuário e onboarding
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!isSessionPending && session) {
+        setIsLoading(true);
+        
+        try {
+          // Buscar dados de onboarding
+          const onboardingRes = await fetch("/api/onboarding");
+          if (onboardingRes.ok) {
+            const onboarding = await onboardingRes.json();
+            setOnboardingData(onboarding.data);
+            
+            // Atualizar dados do usuário com informações reais
+            setUserData(prev => ({
+              ...prev,
+              personalInfo: {
+                ...prev.personalInfo,
+                name: `${onboarding.data.firstName} ${onboarding.data.lastName}`,
+                email: session.user.email || "",
+                phone: onboarding.data.whatsappPhone,
+                position: onboarding.data.position,
+                department: "",
+                image: session.user.image || null,
+                role: session.user.role || "user",
+                memberSince: new Date(session.user.createdAt).toLocaleDateString("pt-BR", {
+                  month: "long",
+                  year: "numeric"
+                }),
+                lastLogin: "Hoje"
+              },
+              companyInfo: {
+                ...prev.companyInfo,
+                name: onboarding.data.companyName,
+                industry: onboarding.data.industry,
+                size: onboarding.data.companySize,
+                address: "Não informado",
+                plan: "Professional"
+              },
+              dataInsights: {
+                ...prev.dataInsights,
+                lastDataUpdate: onboarding.data.completedAt 
+                  ? new Date(onboarding.data.completedAt).toLocaleString("pt-BR")
+                  : "Não disponível"
+              }
+            }));
+          }
+        } catch (error) {
+          console.error("Erro ao carregar dados:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (!isSessionPending && !session) {
+        router.push("/login");
+      }
+    };
+
+    loadUserData();
+  }, [session, isSessionPending, router]);
+
+  // Mostrar loading enquanto carrega os dados
+  if (isSessionPending || isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-64px)]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   // Funções para gerenciar edição
   const handleEdit = (section: string) => {
