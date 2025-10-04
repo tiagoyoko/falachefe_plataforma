@@ -83,7 +83,8 @@ export class FalachefeAgentSquad {
   private async registerDefaultAgents(): Promise<void> {
     // Register Financial Agent
     const financialAgent = new FinancialAgent({
-      model: 'gpt-4',
+      id: 'financial-agent-001',
+      model: 'gpt-4o-mini',
       temperature: 0.7,
       maxTokens: 2000,
       retryAttempts: 3,
@@ -99,6 +100,7 @@ export class FalachefeAgentSquad {
       name: 'Financial Agent',
       description: 'Handles financial operations and cash flow analysis for Falachefe',
       version: '1.0.0',
+      weight: 1,
       specializations: [
         'add_expense',
         'add_revenue', 
@@ -106,21 +108,6 @@ export class FalachefeAgentSquad {
         'budget_planning',
         'financial_query'
       ],
-      config: {
-        model: 'gpt-4o-mini',
-        temperature: 0.7,
-        maxTokens: 1000
-      }
-    })
-
-    await this.agentManager.registerAgent(financialAgent, {
-      id: 'financial-agent-001',
-      type: 'financial',
-      name: 'Financial Agent',
-      description: 'Handles financial operations and cash flow analysis for Falachefe',
-      version: '1.0.0',
-      weight: 1,
-      specializations: ['budget_planning', 'cashflow_analysis'],
       config: {
         model: 'gpt-4o-mini',
         temperature: 0.7,

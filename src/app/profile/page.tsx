@@ -96,8 +96,8 @@ export default function ProfilePage() {
                 phone: onboarding.data.whatsappPhone,
                 position: onboarding.data.position,
                 department: "",
-                image: session.user.image || null,
-                role: session.user.role || "user",
+                image: null, // Forçar null para corresponder ao tipo
+                role: "user",
                 memberSince: new Date(session.user.createdAt).toLocaleDateString("pt-BR", {
                   month: "long",
                   year: "numeric"

@@ -1,0 +1,65 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Next.js application
+  - job_name: 'chat-demo-app'
+    static_configs:
+      - targets: ['app:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 5s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 10s
+
+  # PostgreSQL (if using postgres_exporter)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  # Node Exporter (if using)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 10s
+
+# Alerting rules
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Recording rules
+recording_rules:
+  - name: "chat_demo_app_rules"
+    rules:
+      - record: chat_demo_app:http_requests_per_second
+        expr: rate(http_requests_total[5m])
+      
+      - record: chat_demo_app:websocket_connections_active
+        expr: websocket_connections_active
+      
+      - record: chat_demo_app:agent_response_time_p95
+        expr: histogram_quantile(0.95, rate(agent_response_time_bucket[5m]))
+      
+      - record: chat_demo_app:agent_requests_per_second
+        expr: rate(agent_requests_total[5m])
+      
+      - record: chat_demo_app:error_rate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+

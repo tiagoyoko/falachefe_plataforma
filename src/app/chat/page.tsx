@@ -1,14 +1,14 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/auth/user-profile";
 import { useSession } from "@/lib/auth-client";
 import { useState, type ReactNode, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
-import { Send, Plus, MessageSquare, Bot, User, Copy, Check } from "lucide-react";
+import { Send, Plus, MessageSquare, Bot, User, Copy, Check, RefreshCw, AlertCircle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { useAgentChat } from "@/hooks/use-agent-chat";
 
 const H1: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
   <h1 className="mt-2 mb-3 text-2xl font-bold" {...props} />
@@ -105,32 +105,30 @@ const markdownComponents: Components = {
   td: TD,
 };
 
-type TextPart = { type?: string; text?: string };
-type MaybePartsMessage = {
-  display?: ReactNode;
-  parts?: TextPart[];
-  content?: TextPart[];
-};
-
-function renderMessageContent(message: MaybePartsMessage): ReactNode {
-  if (message.display) return message.display;
-  const parts = Array.isArray(message.parts)
-    ? message.parts
-    : Array.isArray(message.content)
-    ? message.content
-    : [];
-  return parts.map((p, idx) =>
-    p?.type === "text" && p.text ? (
-      <ReactMarkdown key={idx} components={markdownComponents}>
-        {p.text}
-      </ReactMarkdown>
-    ) : null
-  );
-}
 
 export default function ChatPage() {
   const { data: session, isPending } = useSession();
-  const { messages, sendMessage, status } = useChat();
+  const { 
+    messages, 
+    isLoading, 
+    error, 
+    conversationId, 
+    sendMessage, 
+    clearChat, 
+    retryLastMessage 
+  } = useAgentChat(session?.user?.id);
+
+  // Debug log para verificar mensagens
+  useEffect(() => {
+    console.log('🔍 Chat Messages Updated:', messages);
+  }, [messages]);
+
+  // Debug log para verificar sessão
+  useEffect(() => {
+    console.log('👤 Session:', session);
+    console.log('🆔 User ID:', session?.user?.id);
+  }, [session]);
+
   const [input, setInput] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -157,9 +155,9 @@ export default function ChatPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || status === "streaming") return;
+    if (!text || isLoading) return;
     
-    sendMessage({ role: "user", parts: [{ type: "text", text }] });
+    sendMessage(text);
     setInput("");
     
     // Reset textarea height
@@ -212,17 +210,27 @@ export default function ChatPage() {
           <MessageSquare className="h-6 w-6" />
           <h1 className="text-lg font-semibold">Chat</h1>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            // Reset chat functionality
-            window.location.reload();
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nova conversa
-        </Button>
+        <div className="flex gap-2">
+          {error && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={retryLastMessage}
+              className="text-orange-600 hover:text-orange-700"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar novamente
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearChat}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nova conversa
+          </Button>
+        </div>
       </div>
 
       {/* Messages Area */}
@@ -235,12 +243,19 @@ export default function ChatPage() {
               </div>
               <h2 className="text-2xl font-semibold mb-2">Como posso ajudar você hoje?</h2>
               <p className="text-muted-foreground max-w-md">
-                Faça uma pergunta ou comece uma conversa. Estou aqui para ajudar com qualquer dúvida que você tenha.
+                Faça uma pergunta ou comece uma conversa. Tenho agentes especializados em gestão financeira, marketing e vendas para te ajudar.
               </p>
+              {conversationId && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  ID da conversa: {conversationId}
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
-              {messages.map((message) => (
+              {messages.map((message) => {
+                console.log('🎨 Rendering message:', message);
+                return (
                 <div
                   key={message.id}
                   className={`flex gap-4 ${
@@ -262,12 +277,21 @@ export default function ChatPage() {
                       className={`rounded-2xl px-4 py-3 ${
                         message.role === "user"
                           ? "bg-primary text-primary-foreground ml-auto"
+                          : message.metadata?.isError
+                          ? "bg-red-50 border border-red-200"
                           : "bg-muted"
                       }`}
                     >
                       <div className="prose prose-sm max-w-none">
-                        {renderMessageContent(message as MaybePartsMessage)}
+                        {message.role === "assistant" && message.content ? (
+                          <ReactMarkdown components={markdownComponents}>
+                            {message.content}
+                          </ReactMarkdown>
+                        ) : (
+                          <p>{message.content}</p>
+                        )}
                       </div>
+                      
                     </div>
                     
                     {/* Copy button for assistant messages */}
@@ -277,12 +301,7 @@ export default function ChatPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const text = renderMessageContent(message as MaybePartsMessage);
-                            if (typeof text === "string") {
-                              copyToClipboard(text, message.id);
-                            } else {
-                              copyToClipboard(JSON.stringify(text), message.id);
-                            }
+                            copyToClipboard(message.content, message.id);
                           }}
                           className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
@@ -302,15 +321,30 @@ export default function ChatPage() {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
               
-              {status === "streaming" && (
+              {isLoading && (
                 <div className="flex gap-4 justify-start">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Bot className="h-5 w-5 text-primary" />
                   </div>
                   <div className="bg-muted rounded-2xl px-4 py-3">
-                    <Spinner size="sm" />
+                    <div className="flex items-center gap-2">
+                      <Spinner size="sm" />
+                      <span className="text-sm text-muted-foreground">Processando...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {error && (
+                <div className="flex gap-4 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+                    <p className="text-sm text-red-800">{error}</p>
                   </div>
                 </div>
               )}
@@ -337,13 +371,14 @@ export default function ChatPage() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={!input.trim() || status === "streaming"}
+                disabled={!input.trim() || isLoading}
                 className="rounded-xl"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
           </form>
+          
           <p className="text-xs text-muted-foreground text-center mt-2">
             Pressione Enter para enviar, Shift + Enter para nova linha
           </p>

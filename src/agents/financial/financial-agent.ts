@@ -115,11 +115,24 @@ export class FinancialAgent extends BaseAgent {
     const startTime = Date.now()
     
     try {
-      // Classify intent using LLM
-      const classification = await this.intentClassifier.classifyIntent(message)
-      const intent = classification.intent
+      // Simplified intent classification without LLM for now
+      const lowerMessage = message.toLowerCase()
+      let intent: string
+      let confidence: number = 0.8
+
+      if (lowerMessage.includes('despesa') || lowerMessage.includes('gasto') || lowerMessage.includes('pagamento')) {
+        intent = 'add_expense'
+      } else if (lowerMessage.includes('receita') || lowerMessage.includes('venda') || lowerMessage.includes('faturamento')) {
+        intent = 'add_revenue'
+      } else if (lowerMessage.includes('fluxo de caixa') || lowerMessage.includes('caixa') || lowerMessage.includes('saldo')) {
+        intent = 'cashflow_analysis'
+      } else if (lowerMessage.includes('orçamento') || lowerMessage.includes('budget')) {
+        intent = 'budget_planning'
+      } else {
+        intent = 'financial_query'
+      }
+
       let response: string
-      let confidence: number = classification.confidence
 
       switch (intent) {
         case 'add_expense':

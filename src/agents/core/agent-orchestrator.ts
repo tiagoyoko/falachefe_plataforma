@@ -304,28 +304,40 @@ export class AgentOrchestrator {
     intent: IntentClassification,
     context: ConversationContext
   ): Promise<BaseAgent | null> {
+    console.log('🔍 Routing to agent for intent:', intent)
+    console.log('📋 Available routing rules:', this.config.routing.rules.length)
+    
     // Apply routing rules
     for (const rule of this.config.routing.rules) {
+      console.log(`🔍 Checking rule for agentType: ${rule.agentType}`)
       if (this.matchesRule(intent, context, rule)) {
+        console.log(`✅ Rule matched for ${rule.agentType}`)
         const agents = this.agentManager.getAgentsByType(rule.agentType)
+        console.log(`📊 Found ${agents.length} agents of type ${rule.agentType}`)
         const availableAgent = agents.find(agent => agent.state === AgentState.ACTIVE)
         
         if (availableAgent) {
+          console.log(`✅ Found available agent: ${availableAgent.id}`)
           return availableAgent.agent
         }
       }
     }
 
     // Fallback to suggested agent
+    console.log(`🔄 Trying suggested agent: ${intent.suggestedAgent}`)
     const suggestedAgents = this.agentManager.getAgentsByType(intent.suggestedAgent)
+    console.log(`📊 Found ${suggestedAgents.length} suggested agents`)
     const availableSuggested = suggestedAgents.find(agent => agent.state === AgentState.ACTIVE)
     
     if (availableSuggested) {
+      console.log(`✅ Found available suggested agent: ${availableSuggested.id}`)
       return availableSuggested.agent
     }
 
     // Final fallback
+    console.log(`🔄 Trying fallback agent: ${this.config.routing.fallbackAgent}`)
     const fallbackAgents = this.agentManager.getAgentsByType(this.config.routing.fallbackAgent)
+    console.log(`📊 Found ${fallbackAgents.length} fallback agents`)
     const fallbackAgent = fallbackAgents.find(agent => agent.state === AgentState.ACTIVE)
     return fallbackAgent ? fallbackAgent.agent : null
   }
@@ -498,7 +510,9 @@ export class AgentOrchestrator {
         version: 1
       }
     }
-    return await this.processMessage(message, context)
+    // Extract the message content string
+    const messageContent = message.content || message.message || message
+    return await this.processMessage(messageContent, context)
   }
 }
 
