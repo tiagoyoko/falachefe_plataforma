@@ -202,7 +202,7 @@ export class FinancialAgent extends BaseAgent {
         processingTime: Date.now() - startTime,
         metadata: {
           intent,
-          reasoning: classification.reasoning,
+          reasoning: `Intent classified as: ${intent}`,
           financialDataCount: await this.getFinancialDataCount(context.userId)
         }
       }

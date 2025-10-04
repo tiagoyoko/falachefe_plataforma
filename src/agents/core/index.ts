@@ -24,6 +24,23 @@ export { ConversationContextManager } from './conversation-context-manager'
 export { MemorySystem } from './memory-system'
 export { StreamingService } from './streaming-service'
 
+// User Tools
+export { userQueryTool, userBasicQueryTool, userOnboardingQueryTool } from './user-query-tool'
+export { userProfileTool } from './user-profile-tool'
+
+// OpenAI Agent SDK Integration
+export { 
+  openaiAgentTools, 
+  toolExecutors, 
+  openaiAgentConfig, 
+  getToolsForAgentType, 
+  executeTool, 
+  validateToolParameters 
+} from './openai-agent-tools'
+
+// Agent Examples
+export { UserAwareAgent, exampleUsage } from './agent-with-tools-example'
+
 // Setup and Configuration
 export { 
   FalachefeAgentSquad, 

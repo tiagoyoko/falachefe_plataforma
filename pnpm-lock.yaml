@@ -14,6 +14,9 @@ importers:
       '@ai-sdk/react':
         specifier: ^2.0.9
         version: 2.0.9(react@19.1.0)(zod@3.25.76)
+      '@openai/agents':
+        specifier: ^0.1.9
+        version: 0.1.9(ws@8.18.3)(zod@3.25.76)
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.7(@types/react@19.1.9))(@types/react@19.1.9)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -89,6 +92,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.4
         version: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.4)(kysely@0.28.5)(pg@8.16.3)(postgres@3.4.7)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.4)(kysely@0.28.5)(pg@8.16.3)(postgres@3.4.7))(zod@3.25.76)
       lucide-react:
         specifier: ^0.539.0
         version: 0.539.0(react@19.1.0)
@@ -100,7 +106,7 @@ importers:
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       openai:
         specifier: ^6.1.0
-        version: 6.1.0(zod@3.25.76)
+        version: 6.1.0(ws@8.18.3)(zod@3.25.76)
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -141,7 +147,7 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       zod:
-        specifier: ^3.24.1
+        specifier: ^3.25.76
         version: 3.25.76
       zustand:
         specifier: ^5.0.8
@@ -1235,6 +1241,29 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
+  '@openai/agents-core@0.1.8':
+    resolution: {integrity: sha512-6tNFU/oR7EXzYyv6E6xuCVaVFr9ixO3zsPRGb1d+67obGN2V9QftbfXkYN8bobIaVgI7FD5i4d9VQQesL8Odkg==}
+    peerDependencies:
+      zod: ^3.25.40
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@openai/agents-openai@0.1.9':
+    resolution: {integrity: sha512-NNca4HSLDQ9J/xVM05+rzS6QvPN4bscZmZTIgPix1V5wFs8buiDd5sR1jFkEXZ3HppFhm2P8cndV2Ab46it2zw==}
+    peerDependencies:
+      zod: ^3.25.40
+
+  '@openai/agents-realtime@0.1.8':
+    resolution: {integrity: sha512-i9+0G3P640l8LmBkDanJ+YvVTfMnQvLvjqj3h7TnVBjNiXBeFi1G5uaCae5e/xH+igciKgvS8VyQ/Mftel0BQg==}
+    peerDependencies:
+      zod: ^3.25.40
+
+  '@openai/agents@0.1.9':
+    resolution: {integrity: sha512-f0MLi8N9tVqJqxR3oJj7XmXq0roE+lllRaBG3MeMNP0edOC99+Le/24u3lM7HE6/FyqaCdrRuEbv9QEEf0RDkA==}
+    peerDependencies:
+      zod: ^3.25.40
+
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
     engines: {node: '>=8.0.0'}
@@ -2168,6 +2197,9 @@ packages:
   '@types/uuid@10.0.0':
     resolution: {integrity: sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ==}
 
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
 
@@ -3060,6 +3092,12 @@ packages:
         optional: true
       sqlite3:
         optional: true
+
+  drizzle-zod@0.8.3:
+    resolution: {integrity: sha512-66yVOuvGhKJnTdiqj1/Xaaz9/qzOdRJADpDa68enqS6g3t0kpNkwNYjUuaeXgZfO/UWuIM9HIhSlJ6C5ZraMww==}
+    peerDependencies:
+      drizzle-orm: '>=0.36.0'
+      zod: ^3.25.0 || ^4.0.0
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -4550,6 +4588,18 @@ packages:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
     engines: {node: '>=18'}
 
+  openai@5.23.2:
+    resolution: {integrity: sha512-MQBzmTulj+MM5O8SKEk/gL8a7s5mktS9zUtAkU257WjvobGc9nKcBuVwjyEEcb9SI8a8Y2G/mzn3vm9n1Jlleg==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.23.8
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   openai@6.1.0:
     resolution: {integrity: sha512-5sqb1wK67HoVgGlsPwcH2bUbkg66nnoIYKoyV9zi5pZPqh7EWlmSrSDjAh4O5jaIg/0rIlcDKBtWvZBuacmGZg==}
     hasBin: true
@@ -5728,6 +5778,18 @@ packages:
     resolution: {integrity: sha512-7KxauUdBmSdWnmpaGFg+ppNjKF8uNLry8LyzjauQDOVONfFLNKrKvQOxZ/VuTIcS/gge/YNahf5RIIQWTSarlg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
 
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -6783,6 +6845,53 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
+  '@openai/agents-core@0.1.8(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      debug: 4.4.1
+      openai: 5.23.2(ws@8.18.3)(zod@3.25.76)
+    optionalDependencies:
+      '@modelcontextprotocol/sdk': 1.17.4
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+
+  '@openai/agents-openai@0.1.9(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      '@openai/agents-core': 0.1.8(ws@8.18.3)(zod@3.25.76)
+      debug: 4.4.1
+      openai: 5.23.2(ws@8.18.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - supports-color
+      - ws
+
+  '@openai/agents-realtime@0.1.8(zod@3.25.76)':
+    dependencies:
+      '@openai/agents-core': 0.1.8(ws@8.18.3)(zod@3.25.76)
+      '@types/ws': 8.18.1
+      debug: 4.4.1
+      ws: 8.18.3
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  '@openai/agents@0.1.9(ws@8.18.3)(zod@3.25.76)':
+    dependencies:
+      '@openai/agents-core': 0.1.8(ws@8.18.3)(zod@3.25.76)
+      '@openai/agents-openai': 0.1.9(ws@8.18.3)(zod@3.25.76)
+      '@openai/agents-realtime': 0.1.8(zod@3.25.76)
+      debug: 4.4.1
+      openai: 5.23.2(ws@8.18.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+      - ws
+
   '@opentelemetry/api@1.9.0': {}
 
   '@peculiar/asn1-android@2.4.0':
@@ -7669,6 +7778,10 @@ snapshots:
 
   '@types/uuid@10.0.0': {}
 
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 20.19.19
+
   '@types/yargs-parser@21.0.3': {}
 
   '@types/yargs@17.0.33':
@@ -8512,6 +8625,11 @@ snapshots:
       kysely: 0.28.5
       pg: 8.16.3
       postgres: 3.4.7
+
+  drizzle-zod@0.8.3(drizzle-orm@0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.4)(kysely@0.28.5)(pg@8.16.3)(postgres@3.4.7))(zod@3.25.76):
+    dependencies:
+      drizzle-orm: 0.44.4(@opentelemetry/api@1.9.0)(@types/pg@8.15.5)(@upstash/redis@1.35.4)(kysely@0.28.5)(pg@8.16.3)(postgres@3.4.7)
+      zod: 3.25.76
 
   dunder-proto@1.0.1:
     dependencies:
@@ -10489,8 +10607,14 @@ snapshots:
     dependencies:
       mimic-function: 5.0.1
 
-  openai@6.1.0(zod@3.25.76):
+  openai@5.23.2(ws@8.18.3)(zod@3.25.76):
     optionalDependencies:
+      ws: 8.18.3
+      zod: 3.25.76
+
+  openai@6.1.0(ws@8.18.3)(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.3
       zod: 3.25.76
 
   optionator@0.9.4:
@@ -11861,6 +11985,8 @@ snapshots:
     dependencies:
       imurmurhash: 0.1.4
       signal-exit: 3.0.7
+
+  ws@8.18.3: {}
 
   xtend@4.0.2: {}
 

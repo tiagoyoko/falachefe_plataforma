@@ -24,7 +24,7 @@ export interface FullUser extends SessionUser {
  * Busca o usuário completo com role a partir da sessão
  */
 export async function getFullUser(sessionUser: SessionUser): Promise<FullUser | null> {
-  const fullUser = await db.query.user.findFirst({
+  const fullUser = await db.query.users.findFirst({
     where: eq(user.id, sessionUser.id),
     columns: {
       id: true,

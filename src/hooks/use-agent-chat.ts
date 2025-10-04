@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef } from 'react'
 
 export interface AgentMessage {
   id: string
@@ -28,6 +28,13 @@ export function useAgentChat(userId?: string): AgentChatState & AgentChatActions
   const [conversationId, setConversationId] = useState<string | null>(null)
   const lastMessageRef = useRef<string>('')
 
+  // Gerar conversationId se não existir
+  React.useEffect(() => {
+    if (!conversationId) {
+      setConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+    }
+  }, [conversationId])
+
   const sendMessage = useCallback(async (message: string) => {
     if (!message.trim() || isLoading) return
 
@@ -52,7 +59,11 @@ export function useAgentChat(userId?: string): AgentChatState & AgentChatActions
         body: JSON.stringify({
           message,
           conversationId,
-          userId
+          userId: userId || 'anonymous', // Garantir que sempre há um userId
+          // Incluir informações do usuário para personalização
+          includeUserProfile: true,
+          // Forçar o agente a usar tools de consulta de perfil
+          forceToolUse: true
         })
       })
 
