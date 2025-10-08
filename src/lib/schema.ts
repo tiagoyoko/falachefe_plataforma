@@ -10,6 +10,7 @@ import {
   varchar
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { user } from "./schema-consolidated";
 
 // Enums
 export const agentTypeEnum = pgEnum('agent_type', ['sales', 'support', 'marketing', 'finance', 'orchestrator']);
@@ -75,7 +76,7 @@ export const agents = pgTable("agents", {
 // Conversations (Conversas entre usuários e agentes)
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
   currentAgentId: uuid("current_agent_id").references(() => agents.id),
   status: conversationStatusEnum("status").default("active"),
@@ -126,9 +127,9 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   templates: many(templates),
 }));
 
-export const usersRelations = relations(users, ({ one, many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   company: one(companies, {
-    fields: [users.companyId],
+    fields: [user.companyId],
     references: [companies.id],
   }),
   conversations: many(conversations),
@@ -143,9 +144,9 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
-  user: one(users, {
+  user: one(user, {
     fields: [conversations.userId],
-    references: [users.id],
+    references: [user.id],
   }),
   company: one(companies, {
     fields: [conversations.companyId],
@@ -175,8 +176,8 @@ export const templatesRelations = relations(templates, ({ one }) => ({
 // Export all types
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
 export type Agent = typeof agents.$inferSelect;
 export type NewAgent = typeof agents.$inferInsert;
 export type Conversation = typeof conversations.$inferSelect;
@@ -220,8 +221,8 @@ export const financialCategories = pgTable("financial_categories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Agent Squad Financial Data table (from migration)
-export const agentSquadFinancialData = pgTable("agent_squad_financial_data", {
+// Financial Data table
+export const financialData = pgTable("financial_data", {
   id: uuid("id").primaryKey().defaultRandom(),
   type: varchar("type", { length: 20 }).notNull(),
   amount: integer("amount").notNull(), // Stored in cents
@@ -259,9 +260,9 @@ export const financialCategoriesRelations = relations(financialCategories, ({ on
   }),
 }));
 
-export const agentSquadFinancialDataRelations = relations(agentSquadFinancialData, ({ one }) => ({
+export const financialDataRelations = relations(financialData, ({ one }) => ({
   category: one(financialCategories, {
-    fields: [agentSquadFinancialData.category],
+    fields: [financialData.category],
     references: [financialCategories.name],
   }),
 }));

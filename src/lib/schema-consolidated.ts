@@ -18,7 +18,6 @@ import { sql } from "drizzle-orm";
 // ENUMS CONSOLIDADOS
 // ============================================================================
 
-export const agentTypeEnum = pgEnum('agent_type', ['sales', 'support', 'marketing', 'finance', 'orchestrator']);
 export const conversationStatusEnum = pgEnum('conversation_status', ['active', 'waiting', 'escalated', 'closed', 'archived']);
 export const conversationPriorityEnum = pgEnum('conversation_priority', ['low', 'medium', 'high', 'urgent']);
 export const senderTypeEnum = pgEnum('sender_type', ['user', 'agent', 'system']);
@@ -35,8 +34,8 @@ export const subscriptionPlanEnum = pgEnum('subscription_plan', ['starter', 'pro
 export const roleEnum = pgEnum('role', ['super_admin', 'manager', 'analyst', 'viewer']);
 export const companySizeEnum = pgEnum('company_size', ['1-10', '11-50', '51-200', '201-1000', '1000+']);
 
-// Agent Squad specific enums
-export const agentSquadTypeEnum = pgEnum('agent_squad_type', [
+// Agent type enums
+export const agentTypeEnum = pgEnum('agent_type', [
   'financial', 
   'marketing_sales', 
   'hr', 
@@ -106,7 +105,7 @@ export const whatsappUsers = pgTable("whatsapp_users", {
 });
 
 // Better Auth Users (Usuários do painel administrativo)
-export const users = pgTable("users", {
+export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -303,8 +302,8 @@ export const financialCategories = pgTable("financial_categories", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Agent Squad Financial Data
-export const agentSquadFinancialData = pgTable("agent_squad_financial_data", {
+// Financial Data
+export const financialData = pgTable("financial_data", {
   id: uuid("id").primaryKey().defaultRandom(),
   type: varchar("type", { length: 20 }).notNull(),
   amount: integer("amount").notNull(), // Stored in cents
@@ -345,7 +344,7 @@ export const userOnboarding = pgTable("user_onboarding", {
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }).notNull(),
   action: varchar("action", { length: 100 }).notNull(),
   resource: varchar("resource", { length: 100 }).notNull(),
   resourceId: uuid("resource_id"),
@@ -361,7 +360,7 @@ export const auditLogs = pgTable("audit_logs", {
 
 export const companiesRelations = relations(companies, ({ many }) => ({
   whatsappUsers: many(whatsappUsers),
-  users: many(users),
+  users: many(user),
   agents: many(agents),
   conversations: many(conversations),
   templates: many(templates),
@@ -377,9 +376,9 @@ export const whatsappUsersRelations = relations(whatsappUsers, ({ one, many }) =
   conversations: many(conversations),
 }));
 
-export const usersRelations = relations(users, ({ one, many }) => ({
+export const userRelations = relations(user, ({ one, many }) => ({
   company: one(companies, {
-    fields: [users.companyId],
+    fields: [user.companyId],
     references: [companies.id],
   }),
   sessions: many(sessions),
@@ -388,16 +387,16 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, {
+  user: one(user, {
     fields: [sessions.userId],
-    references: [users.id],
+    references: [user.id],
   }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, {
+  user: one(user, {
     fields: [accounts.userId],
-    references: [users.id],
+    references: [user.id],
   }),
 }));
 
@@ -489,17 +488,17 @@ export const financialCategoriesRelations = relations(financialCategories, ({ on
   }),
 }));
 
-export const agentSquadFinancialDataRelations = relations(agentSquadFinancialData, ({ one }) => ({
+export const financialDataRelations = relations(financialData, ({ one }) => ({
   category: one(financialCategories, {
-    fields: [agentSquadFinancialData.category],
+    fields: [financialData.category],
     references: [financialCategories.name],
   }),
 }));
 
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
-  user: one(users, {
+  user: one(user, {
     fields: [auditLogs.userId],
-    references: [users.id],
+    references: [user.id],
   }),
 }));
 
@@ -511,8 +510,8 @@ export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
 export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
 export type NewWhatsAppUser = typeof whatsappUsers.$inferInsert;
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Account = typeof accounts.$inferSelect;
@@ -537,8 +536,8 @@ export type AgentLearning = typeof agentLearnings.$inferSelect;
 export type NewAgentLearning = typeof agentLearnings.$inferInsert;
 export type FinancialCategory = typeof financialCategories.$inferSelect;
 export type NewFinancialCategory = typeof financialCategories.$inferInsert;
-export type AgentSquadFinancialData = typeof agentSquadFinancialData.$inferSelect;
-export type NewAgentSquadFinancialData = typeof agentSquadFinancialData.$inferInsert;
+export type FinancialData = typeof financialData.$inferSelect;
+export type NewFinancialData = typeof financialData.$inferInsert;
 export type UserOnboarding = typeof userOnboarding.$inferSelect;
 export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
 export type AuditLog = typeof auditLogs.$inferSelect;

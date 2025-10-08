@@ -3,7 +3,7 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
-import { FalachefeAgentSquad, createFalachefeAgentSquad, defaultFalachefeConfig } from '@/agents/core/agent-squad-setup';
+// Removed agent-squad framework references
 import { AgentOrchestrator } from '@/agents/core/agent-orchestrator';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { RedisClient } from '@/lib/cache/redis-client';
@@ -17,11 +17,10 @@ let windowControlService: WindowControlService | null = null;
 // Configuração do cliente UAZ
 let uazClient: UAZClient | null = null;
 
-// Agent Squad instance (singleton)
-let agentSquad: FalachefeAgentSquad | null = null;
+// Agent Squad instance removed - using AgentOrchestrator directly
 
 // Agent Orchestrator instance (singleton)
-let agentOrchestrator: AgentOrchestrator | null = null;
+const agentOrchestrator: AgentOrchestrator | null = null;
 
 /**
  * Initialize Redis Client if not already initialized
@@ -71,18 +70,7 @@ async function initializeUAZClient(): Promise<UAZClient> {
   return uazClient;
 }
 
-/**
- * Initialize Agent Squad if not already initialized
- */
-async function initializeAgentSquad(): Promise<FalachefeAgentSquad> {
-  if (!agentSquad) {
-    console.log('🤖 Initializing Agent Squad...');
-    agentSquad = createFalachefeAgentSquad(defaultFalachefeConfig);
-    await agentSquad.initialize();
-    console.log('✅ Agent Squad initialized');
-  }
-  return agentSquad;
-}
+// Removed initializeAgentSquad function - using AgentOrchestrator directly
 
 /**
  * Initialize Agent Orchestrator if not already initialized
@@ -91,34 +79,9 @@ async function initializeAgentOrchestrator(): Promise<AgentOrchestrator> {
   if (!agentOrchestrator) {
     console.log('🎯 Initializing Agent Orchestrator...');
     
-    // Initialize Agent Squad first
-    const squad = await initializeAgentSquad();
-    
-    // Create orchestrator with Agent Squad components
-    agentOrchestrator = new AgentOrchestrator({
-      agentManager: squad.agentManager,
-      memorySystem: squad.memorySystem,
-      streamingService: squad.streamingService,
-      enableLogging: true,
-      logLevel: 'info',
-      classification: {
-        model: 'gpt-4o-mini',
-        temperature: 0.7,
-        cacheEnabled: true,
-        cacheTTL: 300
-      },
-      routing: {
-        rules: [],
-        fallbackAgent: 'general'
-      },
-      context: {
-        ttl: 3600,
-        maxHistory: 10,
-        autoCleanup: true
-      }
-    });
-    
-    console.log('✅ Agent Orchestrator initialized');
+    // TODO: Implement simplified AgentOrchestrator without Agent Squad dependencies
+    // For now, we'll use a placeholder that can be implemented later
+    throw new Error('AgentOrchestrator initialization needs to be updated after removing Agent Squad framework');
   }
   return agentOrchestrator;
 }

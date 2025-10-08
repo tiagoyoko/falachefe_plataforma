@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/auth/user-profile";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 import { useState, type ReactNode, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";

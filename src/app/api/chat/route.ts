@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { falachefeSecretaryAgent } from '@/agents/falachefe-secretary-agent'
+import { falachefeSecretaryAgent } from '@/agents/legacy/falachefe-secretary-agent'
 
 /**
  * Extract name from message

@@ -24,7 +24,7 @@ import {
   Clock,
   XCircle
 } from "lucide-react";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
 
 // Tipos

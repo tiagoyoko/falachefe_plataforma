@@ -1,4 +1,4 @@
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 import { useEffect, useState } from "react";
 import { getFullUser, FullUser } from "@/lib/auth-utils";
 

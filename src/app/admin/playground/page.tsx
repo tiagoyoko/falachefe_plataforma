@@ -4,21 +4,20 @@ import { useState, useEffect } from 'react'
 import { useSessionUser } from '@/hooks/use-session-user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Play, Square, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Play, RefreshCw, Trash2, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface AgentTest {
   id: string
   agentType: string
   message: string
-  response: any
+  response: unknown
   timestamp: Date
   status: 'running' | 'completed' | 'error'
   duration?: number
@@ -43,7 +42,7 @@ export default function PlaygroundPage() {
   const [tests, setTests] = useState<AgentTest[]>([])
   const [showLogs, setShowLogs] = useState(true)
   const [logs, setLogs] = useState<string[]>([])
-  const [permission, setPermission] = useState<{ isSuperAdmin: boolean; user: any } | null>(null)
+  const [permission, setPermission] = useState<{ isSuperAdmin: boolean; user: unknown } | null>(null)
   const [permissionLoading, setPermissionLoading] = useState(true)
 
   const checkPermission = async () => {

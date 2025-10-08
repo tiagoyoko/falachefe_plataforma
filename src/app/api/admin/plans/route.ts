@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 // GET /api/admin/plans - Listar planos de assinatura
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verificar autenticação
     const session = await auth.api.getSession({

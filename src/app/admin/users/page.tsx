@@ -14,7 +14,7 @@ import {
   DollarSign,
   TrendingUp
 } from "lucide-react";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 import { UsersTable } from "@/components/admin/users-table";
 import { SubscriptionMetrics } from "@/components/admin/subscription-metrics";
 import { toast } from "sonner";

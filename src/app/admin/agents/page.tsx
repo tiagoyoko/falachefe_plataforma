@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Settings, Play, Pause, Trash2 } from 'lucide-react'
+import { Plus, Settings, Trash2 } from 'lucide-react'
 
 interface Agent {
   id: string
@@ -18,7 +18,7 @@ interface Agent {
   description: string
   capabilities: string[]
   isActive: boolean
-  config: Record<string, any>
+  config: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
