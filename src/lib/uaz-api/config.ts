@@ -1,6 +1,6 @@
 import { UAZClient } from './client';
 import { TemplateService } from './template-service';
-import { RedisClient } from '../cache/redis-client';
+import { UpstashRedisClient as RedisClient } from '../cache/upstash-redis-client';
 import { UAZCircuitBreaker } from './circuit-breaker';
 import { UAZRetryLogic } from './retry-logic';
 import { UAZRateLimiter } from './rate-limiter';
@@ -16,12 +16,10 @@ export const uazConfig = {
   retries: 3,
 };
 
-// Configuração do Redis
+// Configuração do Redis (Upstash REST API)
 export const redisConfig = {
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-  timeout: 5000,
-  retries: 3,
+  url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',
 };
 
 // Instâncias singleton

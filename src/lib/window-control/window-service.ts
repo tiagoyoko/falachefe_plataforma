@@ -3,7 +3,7 @@
  * Gerencia janelas de 24h conforme políticas do WhatsApp
  */
 
-import { RedisClient } from '../cache/redis-client';
+import { UpstashRedisClient as RedisClient } from '../cache/upstash-redis-client';
 import { 
   WindowState, 
   WindowConfig, 

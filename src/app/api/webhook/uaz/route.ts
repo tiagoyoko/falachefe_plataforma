@@ -6,7 +6,7 @@ import { MessageService } from '@/services/message-service';
 // TODO: Update to call /api/crewai/process endpoint instead
 // import { AgentOrchestrator } from '@/lib/crewai/agent-orchestrator';
 import { WindowControlService } from '@/lib/window-control/window-service';
-import { RedisClient } from '@/lib/cache/redis-client';
+import { UpstashRedisClient as RedisClient } from '@/lib/cache/upstash-redis-client';
 
 // Redis client instance (singleton)
 let redisClient: RedisClient | null = null;
@@ -24,16 +24,18 @@ let uazClient: UAZClient | null = null;
 
 /**
  * Initialize Redis Client if not already initialized
+ * Usando Upstash Redis (REST API para serverless)
  */
 async function initializeRedisClient(): Promise<RedisClient> {
   if (!redisClient) {
-    console.log('🗄️ Initializing Redis Client...');
+    console.log('🗄️ Initializing Upstash Redis Client...');
     redisClient = new RedisClient({
-      url: process.env.UPSTASH_REDIS_REST_URL || '',
-      token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+      url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
+      token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',
     });
+    // Upstash não precisa de connect() explícito (HTTP/REST)
     await redisClient.connect();
-    console.log('✅ Redis Client initialized');
+    console.log('✅ Upstash Redis Client initialized');
   }
   return redisClient;
 }

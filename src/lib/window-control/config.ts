@@ -2,16 +2,14 @@
  * Configuração do Window Control Service
  */
 
-import { RedisClient } from '../cache/redis-client';
+import { UpstashRedisClient as RedisClient } from '../cache/upstash-redis-client';
 import { WindowControlService } from './window-service';
 import { WindowConfig, WindowControlOptions } from './types';
 
-// Configuração do Redis para janelas
+// Configuração do Redis para janelas (Upstash REST API)
 export const windowRedisConfig = {
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-  timeout: 5000,
-  retries: 3,
+  url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',
 };
 
 // Configuração das janelas
