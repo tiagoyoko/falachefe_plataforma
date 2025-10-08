@@ -41,6 +41,8 @@
     "auth:better-test": "tsx scripts/test-better-auth-config.ts",
     "email:test": "tsx scripts/test-email-service.ts",
     "validate:uaz": "tsx scripts/validate-uaz-integration.ts",
+    "validate:crewai": "tsx scripts/testing/validate-crewai-dependencies.ts",
+    "test:crewai:connectivity": "tsx scripts/testing/test-crewai-connectivity.ts",
     "test:uaz": "jest src/lib/uaz-api/__tests__",
     "test:uaz:watch": "jest src/lib/uaz-api/__tests__ --watch",
     "test:uaz:coverage": "jest src/lib/uaz-api/__tests__ --coverage",
@@ -50,7 +52,7 @@
     "test:agents:integration": "npx jest --config jest.config.agents.js --testPathPattern='.*integration.*\\.test\\.ts$'",
     "test:agents:coverage": "npx jest --config jest.config.agents.js --coverage",
     "test:agents:watch": "npx jest --config jest.config.agents.js --watch",
-    "validate:agent-squad": "node scripts/validate-agent-squad.js",
+    "validate:agents": "tsx scripts/testing/test-agent-basic.ts",
     "bmad:refresh": "bmad-method install -f -i codex",
     "bmad:list": "bmad-method list:agents",
     "bmad:validate": "bmad-method validate"
