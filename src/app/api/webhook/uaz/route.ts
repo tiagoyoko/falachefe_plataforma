@@ -3,8 +3,7 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
-// TODO: Update to call /api/crewai/process endpoint instead
-// import { AgentOrchestrator } from '@/lib/crewai/agent-orchestrator';
+import { createQStashClient } from '@/lib/queue/qstash-client';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { UpstashRedisClient as RedisClient } from '@/lib/cache/upstash-redis-client';
 
@@ -318,82 +317,111 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
-    // Process message through CrewAI
-    if (!message.fromMe) {
-      try {
-        console.log('🤖 Calling CrewAI to process message...');
-        
-        const messageText = message.text || message.content || '';
-        
-        // Chamar endpoint CrewAI
-        const crewaiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/crewai/process`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: messageText,
-            userId: result.user.id,
-            phoneNumber: result.user.phoneNumber,
-            context: {
-              conversationId: result.conversation.id,
-              chatName: chat.name,
-              senderName: message.senderName,
-              isGroup: message.isGroup || false,
-              userName: result.user.name,
-              isNewUser: result.user.isNewUser
-            }
-          })
-        });
-
-        if (!crewaiResponse.ok) {
-          throw new Error(`CrewAI endpoint returned ${crewaiResponse.status}`);
-        }
-
-        const crewaiData = await crewaiResponse.json();
-        
-        console.log('✅ CrewAI response received:', {
-          success: crewaiData.success,
-          responseLength: crewaiData.response?.length || 0,
-          processingTime: crewaiData.metadata?.processing_time_ms || 0
-        });
-
-        // Enviar resposta ao usuário via UAZ API
-        if (crewaiData.success && crewaiData.response) {
-          await sendResponseToUserWithWindowValidation(
-            chat, 
-            crewaiData.response, 
-            owner, 
-            token, 
-            message.sender
-          );
-          
-          console.log('✅ Response sent to user successfully');
-        } else {
-          console.warn('⚠️ CrewAI returned no response or failed');
-        }
-        
-      } catch (error) {
-        console.error('❌ Error processing message through CrewAI:', error);
-        
-        // Enviar mensagem de erro amigável ao usuário
+      // Process message through CrewAI via QStash Queue
+      if (!message.fromMe) {
         try {
-          await sendResponseToUserWithWindowValidation(
-            chat,
-            'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
-            owner,
-            token,
-            message.sender
+          console.log('📬 Enqueuing message to QStash for async processing...');
+          
+          const messageText = message.text || message.content || '';
+          
+          // Inicializar QStash client
+          const qstash = createQStashClient();
+          
+          if (!qstash) {
+            console.warn('⚠️ QStash not configured, falling back to direct call');
+            throw new Error('QStash not configured');
+          }
+
+          // URL do worker Railway que processará a mensagem
+          const railwayWorkerUrl = process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL;
+          
+          if (!railwayWorkerUrl) {
+            console.error('❌ RAILWAY_WORKER_URL not configured');
+            throw new Error('Worker URL not configured');
+          }
+
+          // Enfileirar mensagem para processamento assíncrono
+          const queueResult = await qstash.publishMessage(
+            `${railwayWorkerUrl}/process`,
+            {
+              message: messageText,
+              userId: result.user.id,
+              phoneNumber: result.user.phoneNumber,
+              context: {
+                conversationId: result.conversation.id,
+                chatName: chat.name,
+                senderName: message.senderName,
+                isGroup: message.isGroup || false,
+                userName: result.user.name,
+                isNewUser: result.user.isNewUser
+              }
+            },
+            {
+              retries: 2, // Tentar até 3 vezes se falhar
+              delay: 0    // Processar imediatamente
+            }
           );
-        } catch (sendError) {
-          console.error('Failed to send error message to user:', sendError);
+
+          if (queueResult.success) {
+            console.log('✅ Message queued successfully:', {
+              messageId: queueResult.messageId,
+              destination: railwayWorkerUrl,
+              userId: result.user.id
+            });
+          } else {
+            console.error('❌ Failed to queue message:', queueResult.error);
+            throw new Error(queueResult.error || 'Failed to queue message');
+          }
+          
+        } catch (error) {
+          console.error('❌ Error queueing message to QStash:', error);
+          
+          // Fallback: tentar processar diretamente (se QStash falhar)
+          console.log('🔄 Trying direct processing as fallback...');
+          
+          try {
+            const directResponse = await fetch(`${process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL}/process`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: message.text || message.content || '',
+                userId: result.user.id,
+                phoneNumber: result.user.phoneNumber,
+                context: {
+                  conversationId: result.conversation.id,
+                  chatName: chat.name,
+                  senderName: message.senderName,
+                  isGroup: message.isGroup || false,
+                  userName: result.user.name,
+                  isNewUser: result.user.isNewUser
+                }
+              }),
+              signal: AbortSignal.timeout(5000) // Timeout rápido (5s)
+            });
+            
+            if (directResponse.ok) {
+              console.log('✅ Direct processing succeeded');
+            }
+          } catch (fallbackError) {
+            console.error('❌ Direct processing also failed:', fallbackError);
+            
+            // Enviar mensagem de erro ao usuário
+            try {
+              await sendResponseToUserWithWindowValidation(
+                chat,
+                'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
+                owner,
+                token,
+                message.sender
+              );
+            } catch (sendError) {
+              console.error('Failed to send error message to user:', sendError);
+            }
+          }
         }
-        
-        // Não falhar o webhook por erro do CrewAI
+      } else {
+        console.log('⏭️ Skipping CrewAI processing (message from me)');
       }
-    } else {
-      console.log('⏭️ Skipping CrewAI processing (message from me)');
-    }
     
   } catch (error) {
     console.error('Erro ao salvar mensagem:', error);

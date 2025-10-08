@@ -42,3 +42,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 # BMAD (local only)
+crewai-projects/falachefe_crew/.env.railway

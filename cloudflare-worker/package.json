@@ -1,0 +1,23 @@
+{
+  "name": "falachefe-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker para processar mensagens do Falachefe com LangChain.js",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@langchain/openai": "^0.3.14",
+    "@langchain/core": "^0.3.21",
+    "langchain": "^0.3.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.94.0",
+    "typescript": "^5.7.3"
+  }
+}
+

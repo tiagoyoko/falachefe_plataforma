@@ -1,0 +1,21 @@
+name = "falachefe-agent-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Variáveis de ambiente (configurar via wrangler secret)
+# wrangler secret put OPENAI_API_KEY
+# wrangler secret put UAZAPI_TOKEN
+# wrangler secret put UAZAPI_BASE_URL
+
+[build]
+command = "npm install && npm run build"
+
+# Limites generosos no free tier
+[limits]
+cpu_ms = 50
+
+# Bindings (opcional - se quiser usar D1, KV, etc)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "seu-kv-namespace-id"
+

@@ -1,0 +1,22 @@
+# Dependências para API Server Flask no Railway
+
+# Framework web
+flask==3.1.0
+flask-cors==5.0.0
+
+# Cliente HTTP
+requests==2.32.3
+
+# CrewAI (já listadas no pyproject.toml, mas repetindo aqui para clarity)
+crewai[tools]==0.90.1
+crewai-tools==0.19.2
+
+# Database
+psycopg2-binary==2.9.10
+
+# Variáveis de ambiente
+python-dotenv==1.0.1
+
+# Server WSGI para produção
+gunicorn==23.0.0
+
