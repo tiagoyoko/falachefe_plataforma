@@ -61,13 +61,13 @@ async function initializeUAZClient(): Promise<UAZClient> {
     console.log('🔌 Initializing UAZ Client...');
     const windowService = await initializeWindowControlService();
     uazClient = new UAZClient({
-      baseUrl: process.env.UAZ_BASE_URL || 'https://falachefe.uazapi.com',
-      apiKey: process.env.UAZ_API_KEY || '',
-      apiSecret: process.env.UAZ_API_SECRET || '',
+      baseUrl: process.env.UAZAPI_BASE_URL || 'https://falachefe.uazapi.com',
+      apiKey: process.env.UAZAPI_TOKEN || process.env.UAZAPI_INSTANCE_TOKEN || '',
+      apiSecret: process.env.UAZAPI_ADMIN_TOKEN || '',
       webhookSecret: process.env.UAZ_WEBHOOK_SECRET,
       timeout: 30000,
     }, windowService);
-    console.log('✅ UAZ Client initialized');
+    console.log('✅ UAZ Client initialized with token:', process.env.UAZAPI_TOKEN ? '***' + process.env.UAZAPI_TOKEN.slice(-4) : 'NOT SET');
   }
   return uazClient;
 }
