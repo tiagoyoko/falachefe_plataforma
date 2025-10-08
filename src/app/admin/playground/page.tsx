@@ -371,14 +371,14 @@ export default function PlaygroundPage() {
                           <strong>Mensagem:</strong> {test.message}
                         </div>
 
-                        {test.response && (
+                        {test.response ? (
                           <div className="space-y-2">
                             <strong className="text-sm">Resposta:</strong>
                             <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
-                              {JSON.stringify(test.response, null, 2)}
+                              {JSON.stringify(test.response as Record<string, unknown>, null, 2)}
                             </pre>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     ))}
                   </div>
@@ -423,16 +423,16 @@ export default function PlaygroundPage() {
                       {test.message}
                     </div>
 
-                    {test.response && (
+                    {test.response ? (
                       <details className="text-xs">
                         <summary className="cursor-pointer hover:text-foreground">
                           Ver resposta completa
                         </summary>
                         <pre className="mt-2 bg-muted p-2 rounded overflow-auto">
-                          {JSON.stringify(test.response, null, 2)}
+                          {JSON.stringify(test.response as Record<string, unknown>, null, 2)}
                         </pre>
                       </details>
-                    )}
+                    ) : null}
                   </CardContent>
                 </Card>
               ))}
