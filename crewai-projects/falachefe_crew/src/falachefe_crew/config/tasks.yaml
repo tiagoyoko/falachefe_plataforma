@@ -1,0 +1,363 @@
+create_cashflow:
+  description: >
+    Ajudar o empresário {user_id} a criar seu primeiro fluxo de caixa.
+    
+    Contexto da empresa: {company_context}
+    
+    O empresário precisa entender:
+    - O que é fluxo de caixa e por que é importante
+    - Como estruturar as categorias de entrada e saída
+    - Quais informações básicas precisa coletar
+    - Como começar a registrar movimentações
+    
+    Forneça um guia passo a passo para criar o fluxo de caixa inicial,
+    considerando a realidade de uma pequena empresa brasileira.
+  expected_output: >
+    Um guia completo e didático para criação do fluxo de caixa contendo:
+    - Explicação simples do que é fluxo de caixa
+    - Template sugerido com categorias principais de entrada e saída
+    - Passo a passo de como começar a usar
+    - Dicas de organização e boas práticas
+    - Alertas sobre erros comuns a evitar
+    
+    Formato: texto em português brasileiro, linguagem clara e acessível
+  agent: financial_expert
+
+update_cashflow:
+  description: >
+    Auxiliar o empresário {user_id} a registrar movimentações no fluxo de caixa.
+    
+    Tipo de movimentação: {transaction_type}
+    Dados da transação: {transaction_data}
+    
+    IMPORTANTE: Use a ferramenta "Adicionar Transação ao Fluxo de Caixa" APENAS UMA VEZ
+    para registrar a transação. Após o registro bem-sucedido, forneça uma explicação
+    sobre o impacto dessa movimentação.
+    
+    Ajude a:
+    - Categorizar corretamente a entrada ou saída
+    - Registrar a transação UMA ÚNICA VEZ usando a ferramenta
+    - Identificar o impacto no saldo
+    - Sugerir observações importantes para essa movimentação
+  expected_output: >
+    Uma resposta completa em texto contendo:
+    
+    1. Confirmação do registro da transação (resultado da ferramenta)
+    2. Explicação do impacto no fluxo de caixa
+    3. Observações ou alertas relevantes sobre essa movimentação
+    4. Recomendações de boas práticas relacionadas
+    
+    IMPORTANTE: NÃO tente usar a ferramenta múltiplas vezes. Uma única execução é suficiente.
+    
+    Formato: resposta direta e objetiva em português, incluindo o ID da transação registrada
+  agent: financial_expert
+
+analyze_cashflow:
+  description: >
+    Analisar o fluxo de caixa da empresa do usuário {user_id} para o período: {period}
+    
+    Dados do fluxo de caixa: {cashflow_data}
+    
+    Realize uma análise completa que inclua:
+    - Resumo de entradas e saídas
+    - Cálculo do saldo atual e projetado
+    - Identificação de padrões e tendências
+    - Comparação com períodos anteriores
+    - Identificação de problemas ou riscos
+    - Oportunidades de melhoria
+  expected_output: >
+    Um relatório de análise financeira contendo:
+    
+    1. **Resumo Executivo**
+       - Saldo inicial, entradas, saídas e saldo final
+       - Principais destaques do período
+    
+    2. **Análise Detalhada**
+       - Maiores entradas e saídas
+       - Categorias que mais impactam o caixa
+       - Comparação com período anterior
+    
+    3. **Alertas e Riscos**
+       - Problemas identificados
+       - Riscos de liquidez
+       - Despesas atípicas
+    
+    4. **Recomendações**
+       - 3-5 ações práticas para melhorar o fluxo de caixa
+       - Oportunidades de redução de custos
+       - Sugestões de otimização
+    
+    Formato: relatório estruturado em português brasileiro
+  agent: financial_expert
+
+financial_advice:
+  description: >
+    Fornecer consultoria financeira ao empresário {user_id} sobre: {question}
+    
+    Contexto da empresa: {company_context}
+    Situação financeira atual: {financial_status}
+    
+    Forneça uma resposta que seja:
+    - Prática e aplicável à realidade de PME brasileira
+    - Baseada em boas práticas de gestão financeira
+    - Clara e fácil de implementar
+    - Considere limitações típicas de pequenas empresas
+  expected_output: >
+    Consultoria financeira completa incluindo:
+    - Resposta direta à pergunta/problema
+    - Explicação do conceito envolvido (se necessário)
+    - 3-5 recomendações práticas e acionáveis
+    - Exemplos de implementação
+    - Alertas sobre o que evitar
+    - Próximos passos sugeridos
+    
+    Tom: profissional mas acessível, empático com desafios de PME
+    Formato: texto bem estruturado em português brasileiro
+  agent: financial_expert
+
+marketing_strategy:
+  description: >
+    Desenvolver estratégia de marketing para a empresa do usuário {user_id}
+    
+    Informações da empresa: {company_info}
+    Objetivo: {marketing_goal}
+    Orçamento disponível: {budget}
+    
+    Crie uma estratégia considerando:
+    - Público-alvo e persona
+    - Canais mais adequados (considerando orçamento)
+    - Mensagem e posicionamento
+    - Táticas de curto, médio e longo prazo
+    - Métricas para acompanhamento
+  expected_output: >
+    Plano de marketing estratégico contendo:
+    
+    1. **Análise da Situação**
+       - Público-alvo
+       - Concorrência
+       - Oportunidades
+    
+    2. **Estratégia Proposta**
+       - Posicionamento recomendado
+       - Canais prioritários
+       - Mensagem principal
+    
+    3. **Plano de Ação**
+       - Ações para os próximos 30 dias
+       - Ações para 90 dias
+       - Investimento por canal
+    
+    4. **Métricas e KPIs**
+       - Indicadores para acompanhar
+       - Metas realistas
+    
+    Formato: plano estruturado em português brasileiro
+  agent: marketing_expert
+
+sales_process:
+  description: >
+    Estruturar processo de vendas para a empresa do usuário {user_id}
+    
+    Tipo de venda: {sales_type}
+    Produto/Serviço: {product_info}
+    Desafio atual: {current_challenge}
+    
+    Desenvolva um processo que inclua:
+    - Etapas do funil de vendas
+    - Técnicas de prospecção adequadas
+    - Script de abordagem
+    - Processo de qualificação
+    - Estratégias de fechamento
+    - Pós-venda e fidelização
+  expected_output: >
+    Plano de estruturação comercial contendo:
+    
+    1. **Funil de Vendas**
+       - Etapas definidas
+       - Critérios de passagem entre etapas
+    
+    2. **Processo de Prospecção**
+       - Estratégias de geração de leads
+       - Script de abordagem inicial
+       - Técnicas de qualificação
+    
+    3. **Fechamento**
+       - Técnicas de negociação
+       - Como lidar com objeções
+       - Estratégias de fechamento
+    
+    4. **Gestão e Métricas**
+       - KPIs comerciais importantes
+       - Como acompanhar performance
+    
+    Formato: guia prático em português brasileiro
+  agent: sales_expert
+
+hr_guidance:
+  description: >
+    Orientar o empresário {user_id} sobre questão de RH: {hr_question}
+    
+    Contexto: {company_context}
+    Número de funcionários: {employee_count}
+    
+    Forneça orientação sobre:
+    - Aspectos legais (CLT, eSocial, obrigações)
+    - Melhores práticas de gestão de pessoas
+    - Processos recomendados
+    - Documentação necessária
+    - Como implementar na prática
+  expected_output: >
+    Orientação completa de RH incluindo:
+    
+    1. **Aspectos Legais**
+       - Obrigações trabalhistas aplicáveis
+       - Documentação exigida
+       - Prazos e procedimentos
+    
+    2. **Recomendações Práticas**
+       - Como implementar corretamente
+       - Processos sugeridos
+       - Templates/modelos (se aplicável)
+    
+    3. **Boas Práticas**
+       - Como fazer de forma profissional
+       - Erros comuns a evitar
+       - Dicas de gestão de pessoas
+    
+    4. **Próximos Passos**
+       - Checklist de implementação
+       - Recursos úteis
+    
+    Formato: guia em português brasileiro, considerando legislação BR
+  agent: hr_expert
+
+business_consultation:
+  description: >
+    Fornecer consultoria empresarial multi-disciplinar ao usuário {user_id}
+    
+    Situação/Desafio: {business_challenge}
+    Contexto da empresa: {company_context}
+    
+    Esta é uma consulta que pode envolver múltiplas áreas (finanças, marketing,
+    vendas, RH). Analise a situação e forneça recomendações integradas,
+    considerando o impacto em todas as áreas do negócio.
+  expected_output: >
+    Consultoria empresarial completa contendo:
+    
+    1. **Diagnóstico**
+       - Análise da situação atual
+       - Problemas identificados
+       - Oportunidades detectadas
+    
+    2. **Recomendações por Área**
+       - Financeiro: ações para melhorar resultados
+       - Marketing: como aumentar visibilidade/vendas
+       - Vendas: otimizações no processo comercial
+       - RH: melhorias na gestão de pessoas
+    
+    3. **Plano Integrado**
+       - Priorização de ações
+       - Cronograma sugerido
+       - Recursos necessários
+    
+    4. **Implementação**
+       - Primeiros passos
+       - Métricas de sucesso
+       - Como acompanhar evolução
+    
+    Formato: relatório executivo em português brasileiro
+  agent: financial_expert
+
+# ============================================
+# TASKS - ORQUESTRAÇÃO E SUPORTE
+# ============================================
+
+orchestrate_request:
+  description: >
+    Analisar a demanda do usuário e determinar qual especialista deve atendê-la.
+    
+    Demanda do usuário: {user_request}
+    Contexto do usuário: {user_context}
+    Número do WhatsApp: {whatsapp_number}
+    
+    Você deve:
+    1. Analisar cuidadosamente a demanda do usuário
+    2. Identificar qual área de expertise é mais adequada:
+       - Financeiro: fluxo de caixa, custos, precificação, análise financeira
+       - Marketing: estratégias digitais, redes sociais, campanhas, branding
+       - Vendas: processos comerciais, prospecção, fechamento, CRM
+       - RH: contratação, legislação trabalhista, gestão de pessoas, folha
+    3. Determinar se a demanda requer apenas um especialista ou consultoria integrada
+    4. Preparar o contexto adequado para o especialista escolhido
+    
+    IMPORTANTE: 
+    - Se a demanda for simples e objetiva, direcione para UM especialista
+    - Se a demanda envolver múltiplas áreas, indique "consultoria_integrada"
+    - Se não for claro qual especialista, faça perguntas de esclarecimento
+  expected_output: >
+    Uma decisão estruturada em formato JSON contendo:
+    
+    {
+      "specialist": "financial_expert|marketing_expert|sales_expert|hr_expert|consultoria_integrada|needs_clarification",
+      "confidence": "high|medium|low",
+      "reasoning": "Explicação da escolha do especialista",
+      "context_for_specialist": "Resumo organizado da demanda para o especialista",
+      "clarification_questions": ["pergunta1", "pergunta2"] (se needs_clarification)
+    }
+    
+    Formato: JSON válido, sempre em português brasileiro
+  agent: orchestrator
+
+format_and_send_response:
+  description: >
+    Formatar a resposta do especialista e enviar via WhatsApp (uazapi).
+    
+    Resposta do especialista: {specialist_response}
+    Tipo de especialista: {specialist_type}
+    Número do WhatsApp: {whatsapp_number}
+    Contexto da conversa: {conversation_context}
+    
+    Você deve:
+    1. Analisar a resposta do especialista
+    2. Determinar o melhor formato para WhatsApp:
+       - Texto simples: respostas curtas e objetivas
+       - Texto estruturado: análises e relatórios
+       - Menu interativo: quando há opções/escolhas
+       - Documento: relatórios muito longos (salvar como arquivo)
+    3. Formatar adequadamente usando emojis com moderação
+    4. Garantir que a mensagem seja amigável e profissional
+    5. Enviar usando a ferramenta apropriada (SendTextMessageTool, SendMenuMessageTool, etc)
+    6. Confirmar o envio
+    
+    DIRETRIZES DE FORMATAÇÃO:
+    - Mensagens de até 500 caracteres: envie como texto simples
+    - Mensagens de 500-2000 caracteres: use formatação estruturada com emojis
+    - Mensagens acima de 2000 caracteres: divida em partes ou sugira gerar documento
+    - Quando houver 3+ opções/ações: considere usar menu interativo
+    - Use *negrito* para destaques importantes
+    - Use emojis para melhorar legibilidade (1-2 por seção)
+    - Sempre adicione saudação e assinatura do Falachefe
+  expected_output: >
+    Confirmação de envio da mensagem contendo:
+    
+    1. **Status do Envio**
+       - Sucesso ou falha
+       - ID da mensagem (se enviada)
+       - Timestamp
+    
+    2. **Detalhes da Formatação**
+       - Tipo de mensagem escolhido (text/menu/media)
+       - Tamanho da mensagem
+       - Recursos utilizados (emojis, formatação, etc)
+    
+    3. **Métricas**
+       - Caracteres enviados
+       - Tipo de formatação aplicada
+       - Ferramentas utilizadas
+    
+    4. **Próximos Passos Sugeridos** (opcional)
+       - Ações de follow-up recomendadas
+       - Lembretes para o agente
+    
+    Formato: JSON estruturado em português brasileiro
+  agent: support_agent

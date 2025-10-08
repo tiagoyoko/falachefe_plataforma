@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { getFullUser, isSuperAdmin } from '@/lib/auth-utils'
+import { auth } from '@/lib/auth/auth'
+import { getFullUser, isSuperAdmin } from '@/lib/auth/auth-utils'
 
 export async function GET(request: NextRequest) {
   try {

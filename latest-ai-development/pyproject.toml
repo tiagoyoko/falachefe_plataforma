@@ -1,0 +1,22 @@
+[project]
+name = "latest-ai-development"
+version = "0.1.0"
+description = "A CrewAI project for researching latest AI developments."
+dependencies = [
+    "crewai",
+    "crewai-tools",
+    "python-dotenv",
+]
+requires-python = ">=3.10"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ipykernel",
+]
+
+[tool.crewai]
+module = "src.latest_ai_development.crew"
