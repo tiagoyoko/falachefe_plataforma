@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""
+Webhook Processor para CrewAI
+==============================
+
+Processa mensagens recebidas via webhook e retorna respostas do CrewAI.
+
+Uso:
+    echo '{"user_message":"Olá","user_id":"test","phone_number":"+55119999999"}' | python webhook_processor.py
+
+Input (via stdin):
+    {
+        "user_message": "Mensagem do usuário",
+        "user_id": "ID do usuário",
+        "phone_number": "Telefone do usuário",
+        "context": {} // Opcional
+    }
+
+Output (via stdout):
+    {
+        "success": true/false,
+        "response": "Resposta do CrewAI",
+        "metadata": {
+            "processed_at": "ISO timestamp",
+            "crew_type": "hierarchical",
+            "agents_used": [...],
+            "processing_time_ms": 1234
+        }
+    }
+"""
+
+import sys
+import json
+import os
+from datetime import datetime
+from time import time
+
+# Adicionar src ao path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+from falachefe_crew.crew import FalachefeCrew
+
+
+def process_webhook_message(inputs: dict) -> dict:
+    """
+    Processa mensagem do webhook com CrewAI Orchestrated Crew
+    
+    Args:
+        inputs: Dicionário com:
+            - user_message (str): Mensagem do usuário
+            - user_id (str): ID do usuário
+            - phone_number (str): Telefone do usuário
+            - context (dict, opcional): Contexto adicional
+    
+    Returns:
+        dict: Resultado do processamento
+    """
+    start_time = time()
+    
+    try:
+        # Log de início
+        print(f"📥 Processing message: {inputs.get('user_message', '')[:50]}...", file=sys.stderr)
+        print(f"👤 User ID: {inputs.get('user_id')}", file=sys.stderr)
+        
+        # Validar inputs obrigatórios
+        if not inputs.get("user_message"):
+            raise ValueError("user_message is required")
+        
+        if not inputs.get("user_id"):
+            raise ValueError("user_id is required")
+        
+        # Criar crew orquestrada (hierárquica)
+        print("🚀 Initializing FalachefeCrew (orchestrated)...", file=sys.stderr)
+        crew = FalachefeCrew()
+        orchestrated = crew.orchestrated_crew()
+        
+        # Preparar inputs para o crew
+        # Mapear variáveis do webhook para as esperadas pelo CrewAI
+        user_message = inputs.get("user_message", inputs.get("user_request", ""))
+        user_id = inputs.get("user_id", "")
+        phone = inputs.get("phone_number", inputs.get("whatsapp_number", ""))
+        
+        crew_inputs = {
+            # Variáveis para orchestrate_request task
+            "user_request": user_message,
+            "user_context": inputs.get("context", {}).get("user_context", "Cliente via webhook"),
+            "whatsapp_number": phone,
+            
+            # Variáveis para format_and_send_response task
+            "specialist_response": "Processando sua solicitação...",  # Será substituído pelo resultado real
+            "specialist_type": "orchestrator",
+            "conversation_context": f"Usuário {user_id} solicitou: {user_message}",
+            
+            # Variáveis adicionais para outras tasks
+            "user_id": user_id,
+            "phone_number": phone,
+            "user_message": user_message,
+            "company_context": "Pequena empresa via webhook",
+            "transaction_type": "consulta",
+            "transaction_data": {},
+            
+            # Contexto adicional
+            **inputs.get("context", {})
+        }
+        
+        print(f"🎯 Executing crew with inputs...", file=sys.stderr)
+        
+        # Executar crew
+        result = orchestrated.kickoff(inputs=crew_inputs)
+        
+        # Calcular tempo de processamento
+        processing_time = int((time() - start_time) * 1000)  # em ms
+        
+        print(f"✅ Crew executed successfully in {processing_time}ms", file=sys.stderr)
+        
+        # Formatar resposta
+        return {
+            "success": True,
+            "response": str(result),
+            "metadata": {
+                "processed_at": datetime.now().isoformat(),
+                "crew_type": "hierarchical",
+                "agents_used": [
+                    "orchestrator",
+                    "financial_expert",
+                    "marketing_expert",
+                    "sales_expert",
+                    "hr_expert",
+                    "support_agent"
+                ],
+                "processing_time_ms": processing_time,
+                "user_id": inputs.get("user_id"),
+                "phone_number": inputs.get("phone_number")
+            }
+        }
+        
+    except ValueError as e:
+        # Erro de validação
+        print(f"❌ Validation error: {str(e)}", file=sys.stderr)
+        return {
+            "success": False,
+            "response": f"Erro de validação: {str(e)}",
+            "metadata": {
+                "error": str(e),
+                "error_type": "ValidationError",
+                "processed_at": datetime.now().isoformat(),
+                "processing_time_ms": int((time() - start_time) * 1000)
+            }
+        }
+        
+    except Exception as e:
+        # Erro geral
+        print(f"❌ Error processing message: {str(e)}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        
+        return {
+            "success": False,
+            "response": "Desculpe, houve um erro ao processar sua mensagem. Tente novamente em instantes.",
+            "metadata": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "processed_at": datetime.now().isoformat(),
+                "processing_time_ms": int((time() - start_time) * 1000)
+            }
+        }
+
+
+def main():
+    """
+    Função principal
+    
+    Lê JSON do stdin, processa com CrewAI, escreve JSON no stdout.
+    Logs vão para stderr para não poluir stdout.
+    """
+    try:
+        # Ler input do stdin
+        print("📖 Reading input from stdin...", file=sys.stderr)
+        input_data = sys.stdin.read()
+        
+        if not input_data or input_data.strip() == '':
+            raise ValueError("No input data received")
+        
+        print(f"📦 Received {len(input_data)} bytes of data", file=sys.stderr)
+        
+        # Parse JSON
+        try:
+            inputs = json.loads(input_data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {str(e)}")
+        
+        print(f"✅ Input parsed successfully", file=sys.stderr)
+        
+        # Processar com CrewAI
+        result = process_webhook_message(inputs)
+        
+        # Escrever resultado no stdout (SOMENTE JSON, sem logs)
+        print(json.dumps(result, ensure_ascii=False))
+        
+        # Exit code baseado no sucesso
+        sys.exit(0 if result.get("success") else 1)
+        
+    except Exception as e:
+        # Erro crítico
+        print(f"💥 Critical error: {str(e)}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        
+        # Retornar erro como JSON
+        error_result = {
+            "success": False,
+            "response": "Erro interno ao processar mensagem",
+            "metadata": {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "processed_at": datetime.now().isoformat()
+            }
+        }
+        
+        print(json.dumps(error_result, ensure_ascii=False))
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+
