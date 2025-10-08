@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { userOnboarding } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { userProfileManager } from "@/agents/memory/user-profile";
+import { auth } from "@/lib/auth/auth";
+// TODO: Reativar integração com perfil quando necessário
+// import { userProfileManager } from "@/agents/memory/user-profile";
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,28 +75,28 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(userOnboarding.userId, session.user.id));
 
-      // Integrar com sistema de perfil do agente
-      try {
-        await userProfileManager.updateUserProfile(session.user.id, {
-          personalInfo: {
-            name: `${data.firstName} ${data.lastName}`,
-            company: data.companyName,
-            position: data.position,
-            industry: data.industry,
-            companySize: data.companySize
-          },
-          businessContext: {
-            businessType: 'Empresa', // Valor padrão
-            mainChallenges: [],
-            goals: [],
-            priorities: []
-          }
-        });
-        console.log('✅ Dados do onboarding integrados com sistema de perfil do agente');
-      } catch (profileError) {
-        console.warn('⚠️ Erro ao integrar com sistema de perfil:', profileError);
-        // Não falhar o onboarding por causa do perfil
-      }
+      // TODO: Integrar com sistema de perfil do agente quando necessário
+      // try {
+      //   await userProfileManager.updateUserProfile(session.user.id, {
+      //     personalInfo: {
+      //       name: `${data.firstName} ${data.lastName}`,
+      //       company: data.companyName,
+      //       position: data.position,
+      //       industry: data.industry,
+      //       companySize: data.companySize
+      //     },
+      //     businessContext: {
+      //       businessType: 'Empresa', // Valor padrão
+      //       mainChallenges: [],
+      //       goals: [],
+      //       priorities: []
+      //     }
+      //   });
+      //   console.log('✅ Dados do onboarding integrados com sistema de perfil do agente');
+      // } catch (profileError) {
+      //   console.warn('⚠️ Erro ao integrar com sistema de perfil:', profileError);
+      //   // Não falhar o onboarding por causa do perfil
+      // }
 
       return NextResponse.json({
         success: true,
@@ -116,28 +117,28 @@ export async function POST(request: NextRequest) {
         completedAt: data.completedAt ? new Date(data.completedAt) : null,
       });
 
-      // Integrar com sistema de perfil do agente
-      try {
-        await userProfileManager.updateUserProfile(session.user.id, {
-          personalInfo: {
-            name: `${data.firstName} ${data.lastName}`,
-            company: data.companyName,
-            position: data.position,
-            industry: data.industry,
-            companySize: data.companySize
-          },
-          businessContext: {
-            businessType: 'Empresa', // Valor padrão
-            mainChallenges: [],
-            goals: [],
-            priorities: []
-          }
-        });
-        console.log('✅ Dados do onboarding integrados com sistema de perfil do agente');
-      } catch (profileError) {
-        console.warn('⚠️ Erro ao integrar com sistema de perfil:', profileError);
-        // Não falhar o onboarding por causa do perfil
-      }
+      // TODO: Integrar com sistema de perfil do agente quando necessário
+      // try {
+      //   await userProfileManager.updateUserProfile(session.user.id, {
+      //     personalInfo: {
+      //       name: `${data.firstName} ${data.lastName}`,
+      //       company: data.companyName,
+      //       position: data.position,
+      //       industry: data.industry,
+      //       companySize: data.companySize
+      //     },
+      //     businessContext: {
+      //       businessType: 'Empresa', // Valor padrão
+      //       mainChallenges: [],
+      //       goals: [],
+      //       priorities: []
+      //     }
+      //   });
+      //   console.log('✅ Dados do onboarding integrados com sistema de perfil do agente');
+      // } catch (profileError) {
+      //   console.warn('⚠️ Erro ao integrar com sistema de perfil:', profileError);
+      //   // Não falhar o onboarding por causa do perfil
+      // }
 
       return NextResponse.json({
         success: true,

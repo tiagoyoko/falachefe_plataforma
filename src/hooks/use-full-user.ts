@@ -1,6 +1,6 @@
 import { useSession } from "@/lib/auth/auth-client";
 import { useEffect, useState } from "react";
-import { getFullUser, FullUser } from "@/lib/auth-utils";
+import { getFullUser, FullUser } from "@/lib/auth/auth-utils";
 
 export function useFullUser() {
   const { data: session, isPending } = useSession();

@@ -3,8 +3,8 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
-// Removed agent-squad framework references
-import { AgentOrchestrator } from '@/agents/core/agent-orchestrator';
+// TODO: Update to call /api/crewai/process endpoint instead
+// import { AgentOrchestrator } from '@/lib/crewai/agent-orchestrator';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { RedisClient } from '@/lib/cache/redis-client';
 
@@ -19,8 +19,8 @@ let uazClient: UAZClient | null = null;
 
 // Agent Squad instance removed - using AgentOrchestrator directly
 
-// Agent Orchestrator instance (singleton)
-const agentOrchestrator: AgentOrchestrator | null = null;
+// Agent Orchestrator instance (singleton) - TODO: Remove after implementing /api/crewai/process
+// const agentOrchestrator: AgentOrchestrator | null = null;
 
 /**
  * Initialize Redis Client if not already initialized
@@ -75,16 +75,14 @@ async function initializeUAZClient(): Promise<UAZClient> {
 /**
  * Initialize Agent Orchestrator if not already initialized
  */
-async function initializeAgentOrchestrator(): Promise<AgentOrchestrator> {
-  if (!agentOrchestrator) {
-    console.log('🎯 Initializing Agent Orchestrator...');
-    
-    // TODO: Implement simplified AgentOrchestrator without Agent Squad dependencies
-    // For now, we'll use a placeholder that can be implemented later
-    throw new Error('AgentOrchestrator initialization needs to be updated after removing Agent Squad framework');
-  }
-  return agentOrchestrator;
-}
+// TODO: Replace with call to /api/crewai/process endpoint
+// async function initializeAgentOrchestrator(): Promise<AgentOrchestrator> {
+//   if (!agentOrchestrator) {
+//     console.log('🎯 Initializing Agent Orchestrator...');
+//     throw new Error('AgentOrchestrator initialization needs to be updated after removing Agent Squad framework');
+//   }
+//   return agentOrchestrator;
+// }
 
 /**
  * Valida se o payload UAZAPI tem a estrutura correta baseada no tipo de evento
@@ -318,9 +316,10 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
+    // TODO: Process message through CrewAI via /api/crewai/process endpoint
     // Process message through Agent Orchestrator
     try {
-      const orchestrator = await initializeAgentOrchestrator();
+      // const orchestrator = await initializeAgentOrchestrator();
       
       // Convert UAZ message to orchestrator format
       const orchestratorMessage = {
@@ -380,8 +379,13 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         }
       };
 
+      // TODO: Replace with CrewAI API call
       // Process through Agent Orchestrator
-      const response = await orchestrator.processMessage(orchestratorMessage.text, conversationContext);
+      // const response = await orchestrator.processMessage(orchestratorMessage.text, conversationContext);
+      
+      // Temporary: Log and skip processing
+      console.log('⚠️ AgentOrchestrator disabled - implement /api/crewai/process integration');
+      const response = { response: null, agentId: 'none', agentType: 'none', processingTime: 0, confidence: 0 };
       
       console.log('Agent Orchestrator response:', {
         agentId: response.agentId,

@@ -32,7 +32,7 @@ export type {
   NewAdminUser,
   AuditLog,
   NewAuditLog,
-} from '../lib/auth-schema';
+} from '../lib/auth/auth-schema';
 
 export type {
   SubscriptionPlan,

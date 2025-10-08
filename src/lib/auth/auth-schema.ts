@@ -7,7 +7,7 @@ import {
   varchar
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { companies, roleEnum } from "./schema";
+import { companies, roleEnum } from "../schema-consolidated";
 
 // Admin Users (Usuários do painel administrativo)
 export const adminUsers = pgTable("admin_users", {
