@@ -318,93 +318,81 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
-    // TODO: Process message through CrewAI via /api/crewai/process endpoint
-    // Process message through Agent Orchestrator
-    try {
-      // const orchestrator = await initializeAgentOrchestrator();
-      
-      // Convert UAZ message to orchestrator format
-      const orchestratorMessage = {
-        id: message.id,
-        text: message.text || message.content || '',
-        type: message.type || 'text',
-        sender: message.sender,
-        chatId: message.chatid,
-        timestamp: message.messageTimestamp,
-        isGroup: message.isGroup || false,
-        fromMe: message.fromMe || false,
-        metadata: {
-          messageId: message.messageid,
-          senderName: message.senderName,
-          chatName: chat.name,
-          owner: owner,
-          uazMessageId: message.id,
-          uazChatId: chat.id
-        }
-      };
+    // Process message through CrewAI
+    if (!message.fromMe) {
+      try {
+        console.log('🤖 Calling CrewAI to process message...');
+        
+        const messageText = message.text || message.content || '';
+        
+        // Chamar endpoint CrewAI
+        const crewaiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/crewai/process`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: messageText,
+            userId: result.user.id,
+            phoneNumber: result.user.phoneNumber,
+            context: {
+              conversationId: result.conversation.id,
+              chatName: chat.name,
+              senderName: message.senderName,
+              isGroup: message.isGroup || false,
+              userName: result.user.name,
+              isNewUser: result.user.isNewUser
+            }
+          })
+        });
 
-      // Create conversation context
-      const conversationContext = {
-        conversationId: `conv-${message.id}`,
-        userId: message.sender,
-        agentId: 'orchestrator',
-        currentIntent: {
-          intent: 'general',
-          domain: 'general',
-          confidence: 1.0,
-          reasoning: 'Initial message',
-          suggestedAgent: 'orchestrator'
-        },
-        conversationHistory: [{
-          role: 'user' as const,
-          content: orchestratorMessage.text,
-          timestamp: new Date(),
-          metadata: {
-            messageId: message.id,
-            senderId: message.sender
-          }
-        }],
-        metadata: {
-          createdAt: new Date(),
-          lastUpdated: new Date(),
-          version: 1.0,
-          updates: []
-        },
-        userPreferences: {
-          language: 'pt-BR',
-          timezone: 'America/Sao_Paulo'
-        },
-        sessionData: {
-          chatId: orchestratorMessage.chatId,
-          isGroup: orchestratorMessage.isGroup,
-          fromMe: orchestratorMessage.fromMe
+        if (!crewaiResponse.ok) {
+          throw new Error(`CrewAI endpoint returned ${crewaiResponse.status}`);
         }
-      };
 
-      // TODO: Replace with CrewAI API call
-      // Process through Agent Orchestrator
-      // const response = await orchestrator.processMessage(orchestratorMessage.text, conversationContext);
-      
-      // Temporary: Log and skip processing
-      console.log('⚠️ AgentOrchestrator disabled - implement /api/crewai/process integration');
-      const response = { response: null, agentId: 'none', agentType: 'none', processingTime: 0, confidence: 0 };
-      
-      console.log('Agent Orchestrator response:', {
-        agentId: response.agentId,
-        agentType: response.agentType,
-        response: response.response,
-        processingTime: response.processingTime,
-        confidence: response.confidence
-      });
-      
-      // Send response back to user via UAZ API if available
-      if (response.response && !message.fromMe) {
-        await sendResponseToUserWithWindowValidation(chat, response.response, owner, token, message.sender);
+        const crewaiData = await crewaiResponse.json();
+        
+        console.log('✅ CrewAI response received:', {
+          success: crewaiData.success,
+          responseLength: crewaiData.response?.length || 0,
+          processingTime: crewaiData.metadata?.processing_time_ms || 0
+        });
+
+        // Enviar resposta ao usuário via UAZ API
+        if (crewaiData.success && crewaiData.response) {
+          await sendResponseToUserWithWindowValidation(
+            chat, 
+            crewaiData.response, 
+            owner, 
+            token, 
+            message.sender
+          );
+          
+          console.log('✅ Response sent to user successfully');
+        } else {
+          console.warn('⚠️ CrewAI returned no response or failed');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error processing message through CrewAI:', error);
+        
+        // Enviar mensagem de erro amigável ao usuário
+        try {
+          await sendResponseToUserWithWindowValidation(
+            chat,
+            'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
+            owner,
+            token,
+            message.sender
+          );
+        } catch (sendError) {
+          console.error('Failed to send error message to user:', sendError);
+        }
+        
+        // Não falhar o webhook por erro do CrewAI
       }
-      
-    } catch (error) {
-      console.error('Error processing message through Agent Orchestrator:', error);
-      // Continue with normal message processing even if orchestrator fails
+    } else {
+      console.log('⏭️ Skipping CrewAI processing (message from me)');
     }
     
   } catch (error) {
