@@ -113,14 +113,57 @@ def send_to_uazapi(phone_number: str, message: str) -> dict:
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
+    import psutil
+    
+    # Calcular uptime
+    uptime = time() - getattr(app, 'start_time', time())
+    
     return jsonify({
-        "status": "ok",
+        "status": "healthy",
         "service": "falachefe-crewai-api",
+        "version": "1.0.0",
         "timestamp": datetime.now().isoformat(),
+        "uptime_seconds": int(uptime),
         "crew_initialized": crew_instance is not None,
         "uazapi_configured": bool(UAZAPI_TOKEN),
-        "qstash_configured": bool(QSTASH_CURRENT_SIGNING_KEY)
+        "qstash_configured": bool(QSTASH_CURRENT_SIGNING_KEY),
+        "system": {
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory_percent": psutil.virtual_memory().percent,
+            "disk_percent": psutil.disk_usage('/').percent
+        }
     })
+
+
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    """Métricas para Prometheus (formato básico)"""
+    import psutil
+    
+    uptime = time() - getattr(app, 'start_time', time())
+    
+    metrics_text = f"""# HELP falachefe_uptime_seconds Uptime do serviço
+# TYPE falachefe_uptime_seconds gauge
+falachefe_uptime_seconds {int(uptime)}
+
+# HELP falachefe_crew_initialized CrewAI inicializado (1=sim, 0=não)
+# TYPE falachefe_crew_initialized gauge
+falachefe_crew_initialized {1 if crew_instance else 0}
+
+# HELP falachefe_cpu_percent Uso de CPU
+# TYPE falachefe_cpu_percent gauge
+falachefe_cpu_percent {psutil.cpu_percent(interval=0.1)}
+
+# HELP falachefe_memory_percent Uso de memória
+# TYPE falachefe_memory_percent gauge
+falachefe_memory_percent {psutil.virtual_memory().percent}
+
+# HELP falachefe_disk_percent Uso de disco
+# TYPE falachefe_disk_percent gauge
+falachefe_disk_percent {psutil.disk_usage('/').percent}
+"""
+    
+    return metrics_text, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @app.route('/process', methods=['POST'])
@@ -263,6 +306,7 @@ def process_message():
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
+    app.start_time = time()  # Registrar tempo de início
     print(f"🚀 Starting Falachefe CrewAI API on port {port}", file=sys.stderr)
     print(f"📡 UAZAPI: {UAZAPI_BASE_URL}", file=sys.stderr)
     print(f"🔑 Token: {'✅ Configured' if UAZAPI_TOKEN else '❌ NOT SET'}", file=sys.stderr)

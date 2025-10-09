@@ -266,3 +266,4 @@ Em caso de problemas:
 **Versão**: 1.0.0  
 **Compliance LGPD**: ✅ Sim
 
+

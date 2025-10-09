@@ -246,3 +246,4 @@ npm run dev
 **Status**: ✅ Funcional com limitações documentadas  
 **Compliance LGPD**: ✅ Sim
 
+

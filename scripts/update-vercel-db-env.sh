@@ -52,3 +52,4 @@ echo "   1. Execute: vercel --prod"
 echo "   2. Ou faça push no git para trigger automático"
 echo ""
 
+

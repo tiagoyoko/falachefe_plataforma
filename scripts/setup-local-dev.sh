@@ -96,3 +96,4 @@ echo "🛑 Para parar o PostgreSQL local:"
 echo "   docker-compose -f docker-compose.local-db.yml down"
 echo ""
 
+

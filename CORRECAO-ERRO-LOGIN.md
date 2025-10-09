@@ -141,3 +141,4 @@ E compartilhe os logs para análise adicional.
 3. Após resetar a senha no Supabase, **todas** as aplicações conectadas precisam ser atualizadas
 4. O Vercel só usa as novas variáveis após um redeploy
 
+
