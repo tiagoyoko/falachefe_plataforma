@@ -6,6 +6,7 @@ import { MessageService } from '@/services/message-service';
 import { createQStashClient } from '@/lib/queue/qstash-client';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { UpstashRedisClient as RedisClient } from '@/lib/cache/upstash-redis-client';
+import { MessageRouter, MessageDestination } from '@/lib/message-router';
 
 // Redis client instance (singleton)
 let redisClient: RedisClient | null = null;
@@ -356,12 +357,50 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
-      // Process message through CrewAI via QStash Queue
+      // Rotear mensagem baseado no tipo
       if (!message.fromMe) {
+        // Classificar e rotear mensagem
+        const routing = await MessageRouter.route(
+          processedMessage, 
+          chat,
+          process.env.CREWAI_API_URL || 'https://falachefe.app.br'
+        );
+
+        console.log('📍 Message Routing:', {
+          type: routing.classification.contentType,
+          destination: routing.classification.destination,
+          shouldProcess: routing.shouldProcess,
+          priority: routing.classification.priority,
+          estimatedTime: `${routing.classification.metadata.estimatedProcessingTime}s`
+        });
+
+        // Se não deve processar, ignorar
+        if (!routing.shouldProcess) {
+          console.log(`⏭️ Skipping message: ${routing.reason}`);
+          return;
+        }
+
+        // Ignorar tipos específicos
+        if (routing.classification.destination === MessageDestination.IGNORE) {
+          console.log(`🚫 Message type ignored: ${routing.classification.contentType}`);
+          return;
+        }
+
+        // Preparar processamento (fora do try para estar disponível no catch)
+        const messageText = decodedText || decodedContent || '';
+        const baseWorkerUrl = process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL;
+        const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
+        const payload = MessageRouter.preparePayload(
+          processedMessage,
+          chat,
+          routing.classification,
+          result.user.id,
+          result.conversation.id
+        );
+
+        // Processar mensagem
         try {
           console.log('📬 Enqueuing message to QStash for async processing...');
-          
-          const messageText = decodedText || decodedContent || '';
           
           // Inicializar QStash client
           const qstash = createQStashClient();
@@ -371,40 +410,28 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
             throw new Error('QStash not configured');
           }
 
-          // URL do worker Railway que processará a mensagem
-          const railwayWorkerUrl = process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL;
-          
-          if (!railwayWorkerUrl) {
-            console.error('❌ RAILWAY_WORKER_URL not configured');
+          if (!baseWorkerUrl) {
+            console.error('❌ Worker URL not configured');
             throw new Error('Worker URL not configured');
           }
 
+          console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
+
           // Enfileirar mensagem para processamento assíncrono
           const queueResult = await qstash.publishMessage(
-            `${railwayWorkerUrl}/process`,
+            targetEndpoint,
+            payload as any, // Type cast para compatibilidade
             {
-              message: messageText,
-              userId: result.user.id,
-              phoneNumber: result.user.phoneNumber,
-              context: {
-                conversationId: result.conversation.id,
-                chatName: chat.name,
-                senderName: message.senderName,
-                isGroup: message.isGroup || false,
-                userName: result.user.name,
-                isNewUser: result.user.isNewUser
-              }
-            },
-            {
-              retries: 2, // Tentar até 3 vezes se falhar
-              delay: 0    // Processar imediatamente
+              retries: routing.destination.retries,
+              delay: 0
             }
           );
 
           if (queueResult.success) {
             console.log('✅ Message queued successfully:', {
               messageId: queueResult.messageId,
-              destination: railwayWorkerUrl,
+              destination: targetEndpoint,
+              contentType: routing.classification.contentType,
               userId: result.user.id
             });
           } else {
@@ -419,23 +446,11 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           console.log('🔄 Trying direct processing as fallback...');
           
           try {
-            const directResponse = await fetch(`${process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL}/process`, {
+            const directResponse = await fetch(targetEndpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                message: decodedText || decodedContent || '',
-                userId: result.user.id,
-                phoneNumber: result.user.phoneNumber,
-                context: {
-                  conversationId: result.conversation.id,
-                  chatName: chat.name,
-                  senderName: message.senderName,
-                  isGroup: message.isGroup || false,
-                  userName: result.user.name,
-                  isNewUser: result.user.isNewUser
-                }
-              }),
-              signal: AbortSignal.timeout(5000) // Timeout rápido (5s)
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(routing.destination.timeout || 5000)
             });
             
             if (directResponse.ok) {
