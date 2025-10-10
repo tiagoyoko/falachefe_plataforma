@@ -270,10 +270,42 @@ async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
 }
 
 /**
+ * Decodifica base64 se necessário
+ */
+function decodeBase64IfNeeded(text: string): string {
+  if (!text) return '';
+  
+  try {
+    // Verifica se é base64 válido (regex simplificado)
+    const base64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+    
+    // Se parece com base64 e não tem caracteres especiais comuns em texto
+    if (base64Regex.test(text) && !text.includes(' ') && text.length > 20) {
+      const decoded = Buffer.from(text, 'base64').toString('utf-8');
+      
+      // Verifica se o decode resultou em texto válido (não binário)
+      if (/^[\x20-\x7E\u00A0-\uFFFF\s]+$/.test(decoded)) {
+        console.log('🔓 Base64 detected and decoded');
+        return decoded;
+      }
+    }
+  } catch (e) {
+    // Se falhar, retorna original
+    console.log('⚠️ Base64 decode failed, using original text');
+  }
+  
+  return text;
+}
+
+/**
  * Processa eventos de mensagem
  */
 async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; owner: string; token: string }): Promise<void> {
   const { message, chat, owner, token } = data;
+  
+  // Decodificar base64 se necessário
+  const decodedContent = decodeBase64IfNeeded(message.content || '');
+  const decodedText = decodeBase64IfNeeded(message.text || '');
   
   console.log('Processing message event:', {
     messageId: message.id,
@@ -282,8 +314,8 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
     to: message.chatid,
     type: message.type,
     messageType: message.messageType,
-    content: message.content,
-    text: message.text,
+    content: decodedContent,
+    text: decodedText,
     isGroup: message.isGroup,
     fromMe: message.fromMe,
     timestamp: message.messageTimestamp,
@@ -307,8 +339,15 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       console.log('🪟 User message processed, window renewed if needed');
     }
 
+    // Atualizar message com textos decodificados
+    const processedMessage = {
+      ...message,
+      content: decodedContent,
+      text: decodedText
+    };
+
     // Salvar mensagem no banco de dados
-    const result = await MessageService.processIncomingMessage(message, chat, owner);
+    const result = await MessageService.processIncomingMessage(processedMessage, chat, owner);
     
     console.log('Message saved successfully:', {
       messageId: result.message.id,
@@ -322,7 +361,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         try {
           console.log('📬 Enqueuing message to QStash for async processing...');
           
-          const messageText = message.text || message.content || '';
+          const messageText = decodedText || decodedContent || '';
           
           // Inicializar QStash client
           const qstash = createQStashClient();
@@ -384,7 +423,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                message: message.text || message.content || '',
+                message: decodedText || decodedContent || '',
                 userId: result.user.id,
                 phoneNumber: result.user.phoneNumber,
                 context: {
