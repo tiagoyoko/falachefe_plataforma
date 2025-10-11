@@ -1,259 +1,395 @@
-# ✅ Resumo: Atualização de Domínio para api.falachefe.app.br
+# ✅ Resumo: Correção da Arquitetura de Domínios
 
-**Data**: 10 de Outubro de 2025  
-**Status**: 🟡 PARCIALMENTE CONCLUÍDO
-
----
-
-## 📝 O QUE FOI FEITO
-
-### ✅ Arquivos Locais Atualizados
-
-Todos os arquivos do projeto Next.js foram atualizados para usar o novo domínio `api.falachefe.app.br`:
-
-1. **`vercel.json`**
-   - Headers CORS atualizado
-   - Variáveis de ambiente `NEXT_PUBLIC_APP_URL`
-
-2. **`src/lib/message-routing/message-router.ts`**
-   - URL base padrão do CrewAI
-
-3. **`src/lib/cors.ts`**
-   - Lista de origens permitidas
-   - Origem padrão
-
-4. **`src/lib/auth/auth-client.ts`**
-   - Base URL do cliente de autenticação
-
-5. **`src/lib/auth/auth.ts`**
-   - Base URL do Better Auth
-
-6. **`config/env.example`**
-   - Exemplo de URL do webhook
+**Data**: 11 de Outubro de 2025  
+**Status**: ✅ CORRIGIDO
 
 ---
 
-## 🔧 O QUE PRECISA SER FEITO NO SERVIDOR
+## 🎯 O QUE FOI FEITO
 
-### 📋 Checklist para o Servidor Hetzner (37.27.248.13)
+### ❌ Problema Identificado
 
-#### 1. DNS (Prioridade: ALTA)
-```bash
-# Configurar no provedor DNS
-Tipo: A
-Nome: api
-Valor: 37.27.248.13
+No commit `7804ae6` (10/10/2025), foram feitas alterações **INCORRETAS** que mudaram o domínio da aplicação Next.js de `falachefe.app.br` para `api.falachefe.app.br`.
+
+**Arquitetura Incorreta**:
+```
+Aplicação Next.js → api.falachefe.app.br ❌
+API CrewAI → api.falachefe.app.br ❌
 ```
 
-#### 2. Docker Stack (Prioridade: ALTA)
-```bash
-# Conectar no servidor
-ssh root@37.27.248.13
-cd /opt/falachefe-crewai
+### ✅ Correção Aplicada
 
-# Atualizar docker-stack.yml
-# Trocar todas as labels Traefik:
-# DE:  Host(`falachefe.app.br`)
-# PARA: Host(`api.falachefe.app.br`)
-
-# Redeploy
-docker stack deploy -c docker-stack.yml falachefe --with-registry-auth
+**Arquitetura Correta**:
+```
+Aplicação Next.js → falachefe.app.br ✅ (Vercel)
+API CrewAI → api.falachefe.app.br ✅ (Hetzner)
 ```
 
-#### 3. Webhook UAZAPI (Prioridade: ALTA)
-```
-Atualizar URL no painel UAZAPI:
-DE:  https://falachefe.app.br/api/webhook/uaz
-PARA: https://api.falachefe.app.br/api/webhook/uaz
-```
+---
 
-#### 4. Variáveis Vercel (Prioridade: MÉDIA)
-```bash
-# Atualizar CREWAI_API_URL
-vercel env rm CREWAI_API_URL production
-vercel env add CREWAI_API_URL production
-# Valor: https://api.falachefe.app.br
+## 📝 ARQUIVOS CORRIGIDOS
 
-# Redeploy
-vercel --prod
-```
+### 1. vercel.json ✅
+
+**Revertido**:
+- `NEXT_PUBLIC_APP_URL`: `api.falachefe.app.br` → `falachefe.app.br`
+- Header CORS: `api.falachefe.app.br` → `falachefe.app.br`
+
+### 2. src/lib/cors.ts ✅
+
+**Revertido**:
+- Adicionado `falachefe.app.br` em `allowedOrigins`
+- Mantido `api.falachefe.app.br` (para comunicação com API)
+- Origem padrão: `api.falachefe.app.br` → `falachefe.app.br`
+
+### 3. src/lib/auth/auth.ts ✅
+
+**Revertido**:
+- `baseURL`: `api.falachefe.app.br` → `falachefe.app.br`
+
+### 4. src/lib/auth/auth-client.ts ✅
+
+**Revertido**:
+- `baseURL`: `api.falachefe.app.br` → `falachefe.app.br`
+
+### 5. config/env.example ✅
+
+**Revertido e melhorado**:
+- `UAZ_WEBHOOK_URL`: `api.falachefe.app.br` → `falachefe.app.br`
+- **Adicionado**: `CREWAI_API_URL=https://api.falachefe.app.br`
+
+### 6. src/lib/message-routing/message-router.ts ✅
+
+**Mantido correto** (já estava usando `api.falachefe.app.br` para chamadas à API CrewAI)
 
 ---
 
 ## 📚 DOCUMENTAÇÃO CRIADA
 
-### Guia Completo
-➡️ **`ATUALIZACAO-DOMINIO-API.md`**
+### 1. ARQUITETURA-DOMINIOS.md ✅ NOVO
 
-Este guia contém:
-- ✅ Passo a passo completo de atualização
-- ✅ Comandos prontos para copiar e colar
-- ✅ Testes de validação
-- ✅ Troubleshooting
-- ✅ Checklist de verificação
+Documentação completa explicando:
+- Separação de domínios e responsabilidades
+- Fluxos de comunicação
+- Configurações por domínio
+- Troubleshooting
+- Testes e validação
+
+### 2. ATUALIZACAO-DOMINIO-API.md ✅ ATUALIZADO
+
+Guia passo a passo **APENAS** para configurar `api.falachefe.app.br` no servidor Hetzner:
+- Configuração DNS
+- Docker Stack com Traefik
+- Testes e validação
+- Não altera mais arquivos da aplicação
+
+### 3. RESUMO-ATUALIZACAO-DOMINIO.md ✅ ATUALIZADO
+
+Este arquivo - resumo das correções aplicadas
+
+---
+
+## 🏗️ ARQUITETURA FINAL
+
+```
+┌─────────────────────────────────────┐
+│    falachefe.app.br (Vercel)        │
+│                                      │
+│  • Aplicação Next.js 15              │
+│  • Frontend React 19                 │
+│  • Backend API Routes                │
+│  • Autenticação (Better Auth)        │
+│  • Webhooks UAZAPI                   │
+│  • NEXT_PUBLIC_APP_URL =             │
+│    https://falachefe.app.br          │
+└──────────┬──────────────────────────┘
+           │
+           │ HTTP Request
+           │ CREWAI_API_URL =
+           │ https://api.falachefe.app.br
+           │
+           ▼
+┌─────────────────────────────────────┐
+│  api.falachefe.app.br (Hetzner)     │
+│                                      │
+│  • API CrewAI (Python)               │
+│  • Orchestrator + Agentes            │
+│  • Processamento IA                  │
+│  • Docker Swarm                      │
+│  • Traefik (Proxy + SSL)             │
+│  • Endpoints: /process, /health      │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 🔍 COMPARAÇÃO: ANTES vs DEPOIS
+
+### Variáveis de Ambiente
+
+| Variável | ❌ Incorreto (antes) | ✅ Correto (depois) |
+|----------|---------------------|---------------------|
+| `NEXT_PUBLIC_APP_URL` | `api.falachefe.app.br` | `falachefe.app.br` |
+| `CREWAI_API_URL` | (não existia) | `api.falachefe.app.br` |
+| Better Auth `baseURL` | `api.falachefe.app.br` | `falachefe.app.br` |
+| Auth Client `baseURL` | `api.falachefe.app.br` | `falachefe.app.br` |
+| CORS default origin | `api.falachefe.app.br` | `falachefe.app.br` |
+| UAZ Webhook URL | `api.falachefe.app.br/api/...` | `falachefe.app.br/api/...` |
+
+### Fluxo de Autenticação
+
+**❌ Antes (Incorreto)**:
+```
+Google OAuth → api.falachefe.app.br/api/auth/callback/google
+                ↓
+              ERRO: Domínio não existe ainda
+```
+
+**✅ Depois (Correto)**:
+```
+Google OAuth → falachefe.app.br/api/auth/callback/google
+                ↓
+              ✅ Funciona (já deployado no Vercel)
+```
+
+### Fluxo de Webhook WhatsApp
+
+**❌ Antes (Incorreto)**:
+```
+UAZAPI → api.falachefe.app.br/api/webhook/uaz
+          ↓
+        ERRO: Domínio não existe
+```
+
+**✅ Depois (Correto)**:
+```
+UAZAPI → falachefe.app.br/api/webhook/uaz
+          ↓
+        Next.js processa
+          ↓
+        Chama: api.falachefe.app.br/process
+          ↓
+        CrewAI processa e responde
+```
+
+---
+
+## ✅ STATUS ATUAL
+
+### Código Local (Aplicação Next.js)
+
+| Item | Status |
+|------|--------|
+| Domínio corrigido para `falachefe.app.br` | ✅ |
+| CORS permite ambos domínios | ✅ |
+| Better Auth aponta para `falachefe.app.br` | ✅ |
+| MessageRouter chama `api.falachefe.app.br` | ✅ |
+| Variável `CREWAI_API_URL` documentada | ✅ |
+| Documentação completa | ✅ |
+
+### Ainda Precisa Fazer (Servidor Hetzner)
+
+| Item | Status |
+|------|--------|
+| DNS: `api` → `37.27.248.13` | ⏳ Pendente |
+| Docker Stack com labels Traefik | ⏳ Pendente |
+| Certificado SSL Let's Encrypt | ⏳ Pendente |
+| Variável `CREWAI_API_URL` no Vercel | ⏳ Pendente |
+| Testes de integração | ⏳ Pendente |
 
 ---
 
 ## 🚀 PRÓXIMOS PASSOS
 
-### Ordem Recomendada:
+### 1. Commitar Correções (AGORA)
 
-1. **Configurar DNS** (5-10 min)
-   - Acessar painel do provedor DNS
-   - Adicionar registro A: `api` → `37.27.248.13`
-   - Aguardar propagação (5min-24h)
+```bash
+cd /Users/tiagoyokoyama/Falachefe
 
-2. **Atualizar Docker Stack** (10-15 min)
-   - SSH no servidor
-   - Editar `docker-stack.yml`
-   - Fazer redeploy
-   - Aguardar certificado SSL
+# Ver arquivos alterados
+git status
 
-3. **Testar Novo Domínio** (5 min)
-   ```bash
-   curl https://api.falachefe.app.br/health
-   ```
+# Adicionar correções
+git add \
+  vercel.json \
+  src/lib/cors.ts \
+  src/lib/auth/auth.ts \
+  src/lib/auth/auth-client.ts \
+  config/env.example \
+  ARQUITETURA-DOMINIOS.md \
+  ATUALIZACAO-DOMINIO-API.md \
+  RESUMO-ATUALIZACAO-DOMINIO.md
 
-4. **Atualizar Integrações** (10 min)
-   - Webhook UAZAPI
-   - Variáveis Vercel
-   - Redeploy aplicações
+# Commit
+git commit -m "fix: corrigir arquitetura de domínios
 
-5. **Validação Final** (5 min)
-   - Testar fluxo completo WhatsApp
-   - Verificar logs
-   - Confirmar funcionamento
+- Reverter mudanças incorretas do commit 7804ae6
+- Aplicação Next.js permanece em falachefe.app.br
+- API CrewAI será movida para api.falachefe.app.br
+- Adicionar documentação completa da arquitetura
+- Documentar variável CREWAI_API_URL"
+
+# Push
+git push origin master
+```
+
+### 2. Deploy no Vercel (se necessário)
+
+```bash
+# Se houve mudanças relevantes, redeploy
+vercel --prod
+```
+
+### 3. Configurar Servidor Hetzner
+
+Seguir guia: **`ATUALIZACAO-DOMINIO-API.md`**
+
+Passos:
+1. DNS: adicionar registro A `api` → `37.27.248.13`
+2. SSH no servidor e editar `docker-stack.yml`
+3. Deploy da stack com Traefik
+4. Aguardar certificado SSL
+5. Testar endpoints
+
+**Tempo estimado**: 30-45 minutos
+
+### 4. Atualizar Variável no Vercel
+
+```bash
+# Via CLI
+echo "https://api.falachefe.app.br" | vercel env add CREWAI_API_URL production
+vercel --prod
+
+# Ou via Dashboard:
+# https://vercel.com → Settings → Environment Variables
+# Adicionar: CREWAI_API_URL = https://api.falachefe.app.br
+```
+
+### 5. Validação Final
+
+```bash
+# Testar aplicação
+curl https://falachefe.app.br
+
+# Testar API
+curl https://api.falachefe.app.br/health
+
+# Testar integração
+curl -X POST https://falachefe.app.br/api/test-crewai \
+  -H "Content-Type: application/json" \
+  -d '{"message":"teste"}'
+```
 
 ---
 
-## 📊 ARQUIVOS MODIFICADOS
+## 📊 RESUMO DAS MUDANÇAS
+
+### Commits
+
+| Commit | Descrição | Status |
+|--------|-----------|--------|
+| `7804ae6` (10/10) | ❌ Mudanças incorretas | Revertido |
+| **NOVO** (11/10) | ✅ Correção da arquitetura | Pronto para commit |
+
+### Arquivos Modificados
 
 ```
 /Users/tiagoyokoyama/Falachefe/
-├── vercel.json                              ✅ ATUALIZADO
-├── config/env.example                       ✅ ATUALIZADO
-├── src/
-│   └── lib/
-│       ├── cors.ts                          ✅ ATUALIZADO
-│       ├── auth/
-│       │   ├── auth.ts                      ✅ ATUALIZADO
-│       │   └── auth-client.ts               ✅ ATUALIZADO
-│       └── message-routing/
-│           └── message-router.ts            ✅ ATUALIZADO
-├── ATUALIZACAO-DOMINIO-API.md               ✅ CRIADO
-└── RESUMO-ATUALIZACAO-DOMINIO.md            ✅ CRIADO (este arquivo)
+├── vercel.json                              ✅ Corrigido
+├── config/env.example                       ✅ Corrigido + melhorado
+├── src/lib/
+│   ├── cors.ts                              ✅ Corrigido
+│   └── auth/
+│       ├── auth.ts                          ✅ Corrigido
+│       └── auth-client.ts                   ✅ Corrigido
+├── src/lib/message-routing/
+│   └── message-router.ts                    ✅ Já estava correto
+├── ARQUITETURA-DOMINIOS.md                  ✅ NOVO
+├── ATUALIZACAO-DOMINIO-API.md               ✅ Atualizado
+└── RESUMO-ATUALIZACAO-DOMINIO.md            ✅ Este arquivo
 ```
 
 ---
 
-## 🔍 ARQUIVOS QUE PODEM PRECISAR ATUALIZAÇÃO MANUAL
+## 🎯 CHECKLIST FINAL
 
-Os seguintes arquivos contêm referências ao domínio antigo na **documentação** ou **scripts de teste**.  
-Eles não afetam o funcionamento, mas devem ser atualizados para consistência:
+### Código Local ✅
 
-### Scripts de Teste (Baixa Prioridade)
-- `scripts/testing/test-webhook-production.sh`
-- `scripts/testing/test-production-webhook-real.sh`
-- `scripts/testing/test-webhook-detailed.sh`
-- `scripts/testing/update-vercel-uazapi-token.sh`
+- [x] vercel.json usa `falachefe.app.br`
+- [x] CORS permite ambos domínios
+- [x] Better Auth usa `falachefe.app.br`
+- [x] Auth Client usa `falachefe.app.br`
+- [x] MessageRouter chama `api.falachefe.app.br`
+- [x] env.example documenta `CREWAI_API_URL`
+- [x] Documentação completa criada
 
-**Como atualizar:**
-```bash
-cd /Users/tiagoyokoyama/Falachefe
-find scripts/testing -name "*.sh" -type f -exec sed -i '' 's|https://falachefe.app.br|https://api.falachefe.app.br|g' {} \;
-```
+### Deploy Vercel ⏳
 
-### Documentação (Baixa Prioridade)
-- `DOMINIO-TRAEFIK-SUCCESS.md`
-- `DEPLOY-HETZNER-SUCCESS.md`
-- `DIAGNOSTICO-INTEGRACAO-AGENTES.md`
-- `COMO-TESTAR-WEBHOOK-WHATSAPP.md`
-- `RELATORIO-FINAL-WEBHOOK-CREWAI.md`
-- `INTEGRACAO-COMPLETA-WEBHOOK-CREWAI.md`
-- `GUIA-TESTE-WEBHOOK-CREWAI.md`
-- `docs/DEPLOY-ERRORS-SUMMARY.md`
+- [ ] Commit e push das correções
+- [ ] Deploy no Vercel (se necessário)
+- [ ] Adicionar variável `CREWAI_API_URL`
+- [ ] Verificar aplicação funcionando
 
-**Nota**: Esses arquivos são históricos/referência. Podem permanecer como estão ou serem atualizados posteriormente.
+### Servidor Hetzner ⏳
 
----
+- [ ] DNS configurado
+- [ ] Docker Stack atualizado
+- [ ] Certificado SSL gerado
+- [ ] Endpoints respondendo
+- [ ] Logs sem erros
 
-## ⚠️ IMPORTANTE
+### Validação ⏳
 
-### Domínios em Paralelo
-- O domínio antigo `falachefe.app.br` pode continuar funcionando
-- Ambos podem coexistir sem problemas
-- Para remover o antigo, edite `docker-stack.yml` e remova as labels antigas
-
-### Certificados SSL
-- Traefik gerará automaticamente certificado para `api.falachefe.app.br`
-- Processo leva 1-2 minutos após deploy
-- Let's Encrypt tem limite de 5 certificados/semana por domínio
-
-### DNS
-- Aguarde propagação DNS antes de testar
-- Use `nslookup api.falachefe.app.br` para verificar
-- Pode levar até 24h (geralmente 5-30 min)
-
----
-
-## 🧪 TESTE RÁPIDO
-
-Após completar os passos no servidor, teste:
-
-```bash
-# 1. DNS resolvendo
-dig +short api.falachefe.app.br
-# Esperado: 37.27.248.13
-
-# 2. HTTPS funcionando
-curl -I https://api.falachefe.app.br/health
-# Esperado: HTTP/2 200
-
-# 3. Health check OK
-curl -s https://api.falachefe.app.br/health | jq .status
-# Esperado: "healthy"
-
-# 4. Redirect HTTP→HTTPS
-curl -I http://api.falachefe.app.br/health
-# Esperado: HTTP/1.1 301 + Location: https://...
-```
+- [ ] `falachefe.app.br` acessível
+- [ ] `api.falachefe.app.br/health` OK
+- [ ] Autenticação funcionando
+- [ ] Webhook UAZAPI funcionando
+- [ ] Integração CrewAI funcionando
 
 ---
 
 ## 📞 SUPORTE
 
-### Guia Completo
-📖 Ver `ATUALIZACAO-DOMINIO-API.md` para instruções detalhadas
+### Documentação
 
-### Verificar Status no Servidor
-```bash
-ssh root@37.27.248.13 'docker service ls && docker service logs falachefe_crewai-api --tail=20'
-```
+- 📖 **`ARQUITETURA-DOMINIOS.md`** - Visão completa da arquitetura
+- 🛠️ **`ATUALIZACAO-DOMINIO-API.md`** - Guia de setup do servidor
+- 📋 **`RESUMO-ATUALIZACAO-DOMINIO.md`** - Este arquivo
 
-### Verificar Traefik
+### Comandos Rápidos
+
 ```bash
-ssh root@37.27.248.13 'docker service logs traefik_traefik --tail=50 | grep api.falachefe'
+# Ver status
+git status
+
+# Testar aplicação local
+npm run dev
+
+# Testar API (após deploy)
+curl https://api.falachefe.app.br/health
+
+# SSH servidor
+ssh root@37.27.248.13
+
+# Logs servidor
+ssh root@37.27.248.13 'docker service logs falachefe_crewai-api -f'
 ```
 
 ---
 
-## ✅ QUANDO CONSIDERAR CONCLUÍDO
+## ✅ CONCLUSÃO
 
-A atualização estará 100% concluída quando:
+**Status**: Código corrigido, pronto para commit e deploy
 
-- [x] Arquivos locais atualizados
-- [x] Documentação criada
-- [ ] DNS configurado e propagado
-- [ ] Docker Stack atualizado no servidor
-- [ ] Certificado SSL gerado
-- [ ] Webhook UAZAPI atualizado
-- [ ] Variáveis Vercel atualizadas
-- [ ] Testes de health check OK
-- [ ] Teste de processamento OK
-- [ ] Fluxo WhatsApp end-to-end funcionando
+**O que mudou**:
+- ✅ Aplicação permanece em `falachefe.app.br`
+- ✅ API CrewAI será configurada em `api.falachefe.app.br`
+- ✅ Arquitetura documentada e clara
+- ✅ Fluxos de comunicação definidos
+
+**Próxima ação**: Commitar mudanças e seguir guia de setup do servidor
 
 ---
 
-**Última Atualização**: 10 de Outubro de 2025  
-**Próxima Ação**: Seguir `ATUALIZACAO-DOMINIO-API.md` passo a passo
-
+**Última Atualização**: 11 de Outubro de 2025  
+**Status**: ✅ Pronto para execução

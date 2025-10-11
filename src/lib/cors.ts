@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 export function getCorsHeaders(origin?: string) {
   const allowedOrigins = [
     'https://falachefe-plataforma-dq7j.vercel.app',
+    'https://falachefe.app.br',
     'https://api.falachefe.app.br',
     'http://localhost:3000',
     'http://localhost:3001'
@@ -10,7 +11,7 @@ export function getCorsHeaders(origin?: string) {
 
   const allowedOrigin = origin && allowedOrigins.includes(origin) 
     ? origin 
-    : 'https://api.falachefe.app.br'
+    : 'https://falachefe.app.br'
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,

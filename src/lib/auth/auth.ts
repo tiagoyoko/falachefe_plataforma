@@ -26,7 +26,7 @@ export const auth = betterAuth({
     anonymous(), // Plugin para usuários anônimos
   ],
   secret: process.env.BETTER_AUTH_SECRET as string,
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? 'https://api.falachefe.app.br' : 'http://localhost:3000'),
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? 'https://falachefe.app.br' : 'http://localhost:3000'),
   logger: {
     level: "error", // Sempre error para não expor dados sensíveis
   },

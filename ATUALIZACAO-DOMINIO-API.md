@@ -1,28 +1,58 @@
-# 🔄 Atualização de Domínio: api.falachefe.app.br
+# 🔄 Setup API CrewAI: api.falachefe.app.br
 
-**Data**: 10 de Outubro de 2025  
+**Data**: 11 de Outubro de 2025  
 **Servidor**: 37.27.248.13 (Hetzner)  
-**Mudança**: `falachefe.app.br` → `api.falachefe.app.br`
+**Objetivo**: Configurar domínio dedicado para API CrewAI
+
+> **⚠️ IMPORTANTE**: Este guia é APENAS para configurar o serviço CrewAI no servidor Hetzner.  
+> A aplicação Next.js continua em `falachefe.app.br` (Vercel).
 
 ---
 
-## 📋 CHECKLIST DE ATUALIZAÇÃO
+## 📋 Visão Geral da Arquitetura
 
-### ✅ 1. Arquivos Locais (Já Atualizados)
+```
+┌──────────────────────────────────────┐
+│   falachefe.app.br (Vercel)          │
+│   • Aplicação Next.js                │
+│   • Frontend + Backend               │
+│   • Autenticação                     │
+│   • Webhooks UAZAPI                  │
+└──────────┬───────────────────────────┘
+           │
+           │ Chama API
+           ▼
+┌──────────────────────────────────────┐
+│   api.falachefe.app.br (Hetzner)     │
+│   • Serviço CrewAI (Python)          │
+│   • Processamento de mensagens       │
+│   • Docker Swarm + Traefik           │
+└──────────────────────────────────────┘
+```
 
-- [x] `vercel.json` - Headers CORS e variáveis de ambiente
-- [x] `src/lib/message-routing/message-router.ts` - URL base CrewAI
-- [x] `src/lib/cors.ts` - Origens permitidas
-- [x] `src/lib/auth/auth-client.ts` - Base URL autenticação
-- [x] `src/lib/auth/auth.ts` - Base URL Better Auth
+**Ver documentação completa**: `ARQUITETURA-DOMINIOS.md`
 
-### 🔧 2. Servidor Hetzner (Precisa Atualizar)
+---
 
-- [ ] Configuração DNS
-- [ ] Docker Stack (Traefik labels)
-- [ ] Variáveis de ambiente
-- [ ] Certificado SSL
-- [ ] Testes de validação
+## 🎯 O QUE SERÁ CONFIGURADO
+
+✅ Domínio: `api.falachefe.app.br`  
+✅ Servidor: Hetzner 37.27.248.13  
+✅ Serviço: CrewAI API (Python)  
+✅ SSL: Let's Encrypt (automático via Traefik)  
+✅ Proxy: Traefik  
+
+❌ **NÃO será alterado**: `falachefe.app.br` (aplicação continua na Vercel)
+
+---
+
+## 📝 PRÉ-REQUISITOS
+
+- [ ] Acesso SSH ao servidor: `ssh root@37.27.248.13`
+- [ ] Docker Swarm já configurado
+- [ ] Traefik já rodando na rede `netrede`
+- [ ] Imagem Docker `falachefe-crewai:latest` já buildada
+- [ ] Acesso ao painel DNS do domínio
 
 ---
 
@@ -30,40 +60,38 @@
 
 ### 1.1 Adicionar Registro DNS
 
-No seu provedor DNS (Cloudflare, GoDaddy, etc.), adicione um novo registro:
+No seu provedor DNS (Cloudflare, GoDaddy, Registro.br, etc.):
 
 ```
 Tipo: A
 Nome: api
 Valor: 37.27.248.13
-TTL: Auto ou 3600
-Proxy: Desativado (se usar Cloudflare)
+TTL: 3600 (ou Auto)
+Proxy Status: DNS only (se usar Cloudflare)
 ```
 
-**Resultado**: `api.falachefe.app.br` → `37.27.248.13`
+**Resultado esperado**: `api.falachefe.app.br` → `37.27.248.13`
 
 ### 1.2 Verificar Propagação
 
 ```bash
-# Verificar DNS
+# Do seu Mac
 nslookup api.falachefe.app.br
 
 # Deve retornar:
-# Server: ...
-# Address: ...
 # Name:    api.falachefe.app.br
 # Address: 37.27.248.13
 
-# Ou usar dig
+# Ou com dig
 dig +short api.falachefe.app.br
 # Deve retornar: 37.27.248.13
 ```
 
-⏰ **Aguarde**: DNS pode levar de 5 minutos a 24 horas para propagar.
+⏰ **Tempo de propagação**: 5 minutos a 24 horas (geralmente 5-30 min)
 
 ---
 
-## 🐳 PASSO 2: Atualizar Docker Stack no Servidor Hetzner
+## 🐳 PASSO 2: Atualizar Docker Stack
 
 ### 2.1 Conectar no Servidor
 
@@ -72,15 +100,13 @@ ssh root@37.27.248.13
 cd /opt/falachefe-crewai
 ```
 
-### 2.2 Criar/Atualizar docker-stack.yml
-
-Crie ou edite o arquivo `docker-stack.yml`:
+### 2.2 Editar docker-stack.yml
 
 ```bash
 nano docker-stack.yml
 ```
 
-**Conteúdo completo:**
+**Conteúdo completo**:
 
 ```yaml
 version: "3.8"
@@ -137,28 +163,31 @@ networks:
     external: true
 ```
 
-### 2.3 Verificar Arquivo .env
+Salvar: `Ctrl+O`, `Enter`, `Ctrl+X`
 
-Certifique-se que o `.env` existe e está correto:
+### 2.3 Verificar Arquivo .env
 
 ```bash
 cat .env
-
-# Deve conter:
-# OPENAI_API_KEY=sk-proj-...
-# UAZAPI_BASE_URL=https://falachefe.uazapi.com
-# UAZAPI_TOKEN=4fbeda58-0b8a-4905-9218-8ec89967a4a4
-# UAZAPI_ADMIN_TOKEN=aCOqY35qDa9NCd25XmwgOKnBbKyxymZZfStBRaHzb8NiIqqfPn
-# GUNICORN_WORKERS=2
-# GUNICORN_THREADS=4
-# GUNICORN_TIMEOUT=120
-# LOG_LEVEL=info
 ```
 
-### 2.4 Deploy da Stack Atualizada
+Deve conter:
 
 ```bash
-# Deploy com o novo domínio
+OPENAI_API_KEY=sk-proj-...
+UAZAPI_BASE_URL=https://falachefe.uazapi.com
+UAZAPI_TOKEN=4fbeda58-0b8a-4905-9218-8ec89967a4a4
+UAZAPI_ADMIN_TOKEN=aCOqY35qDa9NCd25XmwgOKnBbKyxymZZfStBRaHzb8NiIqqfPn
+GUNICORN_WORKERS=2
+GUNICORN_THREADS=4
+GUNICORN_TIMEOUT=120
+LOG_LEVEL=info
+```
+
+### 2.4 Deploy da Stack
+
+```bash
+# Deploy com novo domínio
 docker stack deploy -c docker-stack.yml falachefe --with-registry-auth
 
 # Verificar status
@@ -166,36 +195,36 @@ docker service ls | grep falachefe
 # Deve mostrar: falachefe_crewai-api   replicated   1/1
 
 # Ver logs
-docker service logs falachefe_crewai-api -f
+docker service logs falachefe_crewai-api -f --tail=50
 ```
 
 ### 2.5 Aguardar Certificado SSL
 
 O Traefik irá automaticamente:
-1. Detectar o novo domínio `api.falachefe.app.br`
+1. Detectar o domínio `api.falachefe.app.br`
 2. Solicitar certificado Let's Encrypt
 3. Configurar HTTPS
 
-⏰ **Tempo**: ~1-2 minutos
+⏰ **Tempo**: 1-2 minutos
 
-Verificar logs do Traefik:
+**Verificar logs do Traefik**:
 
 ```bash
-# Encontrar o container do Traefik
+# Encontrar container do Traefik
 docker ps | grep traefik
 
-# Ver logs (substituir XXX pelo ID)
-docker logs traefik_traefik.1.XXX --tail=50 | grep -i "letsencrypt\|api.falachefe"
+# Ver logs (substituir XXX pelo ID/nome)
+docker logs traefik_traefik.1.XXX --tail=50 | grep -i "api.falachefe"
 ```
 
 ---
 
-## 🧪 PASSO 3: Testar Novo Domínio
+## 🧪 PASSO 3: Testar API
 
 ### 3.1 Teste DNS
 
 ```bash
-# Do seu Mac ou do servidor
+# Do seu Mac
 curl -I https://api.falachefe.app.br/health
 
 # Deve retornar:
@@ -213,7 +242,7 @@ curl -s https://api.falachefe.app.br/health | jq
   "status": "healthy",
   "service": "falachefe-crewai-api",
   "version": "1.0.0",
-  "timestamp": "2025-10-10T...",
+  "timestamp": "2025-10-11T...",
   "crew_initialized": false,
   "uazapi_configured": true,
   "system": {
@@ -241,8 +270,8 @@ echo | openssl s_client -connect api.falachefe.app.br:443 2>/dev/null | openssl 
 
 # Deve retornar:
 # issuer=C = US, O = Let's Encrypt, CN = ...
-# notBefore=Oct 10 ...
-# notAfter=Jan 08 ...
+# notBefore=Oct 11 ...
+# notAfter=Jan 09 ...
 ```
 
 ### 3.5 Teste de Processamento
@@ -257,110 +286,130 @@ curl -X POST https://api.falachefe.app.br/process \
     "context": {}
   }'
 
-# Deve processar e retornar (pode levar ~3min)
+# Deve processar e retornar resposta (pode levar 30s-3min)
 ```
 
 ---
 
-## 🔄 PASSO 4: Atualizar Integrações
+## 🔄 PASSO 4: Configurar Aplicação Next.js (Vercel)
 
-### 4.1 Atualizar Webhook UAZAPI
+### 4.1 Variável de Ambiente no Vercel
 
-**No painel UAZAPI** (https://falachefe.uazapi.com):
+A aplicação Next.js em `falachefe.app.br` precisa saber a URL da API CrewAI.
 
-1. Vá em **Settings** → **Webhooks**
-2. Atualizar URL do webhook:
-   ```
-   Antiga: https://falachefe.app.br/api/webhook/uaz
-   Nova:   https://api.falachefe.app.br/api/webhook/uaz
-   ```
-3. Salvar alterações
+**Opção A: Via Dashboard Vercel**
 
-**Via API (alternativa):**
+1. Acesse: https://vercel.com/tiago-6739s-projects/falachefe
+2. Vá em **Settings** → **Environment Variables**
+3. Adicione ou atualize:
+   - Nome: `CREWAI_API_URL`
+   - Valor: `https://api.falachefe.app.br`
+   - Environment: **Production**
+4. Salvar
+5. **Deployments** → **Redeploy** (latest)
 
-```bash
-curl -X PUT "https://falachefe.uazapi.com/api/v1/webhooks" \
-  -H "Authorization: Bearer aCOqY35qDa9NCd25XmwgOKnBbKyxymZZfStBRaHzb8NiIqqfPn" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://api.falachefe.app.br/api/webhook/uaz",
-    "events": ["messages", "messages_update"]
-  }'
-```
-
-### 4.2 Atualizar Variáveis no Vercel
-
-**Do seu Mac:**
+**Opção B: Via CLI**
 
 ```bash
 cd /Users/tiagoyokoyama/Falachefe
 
-# Atualizar variável de ambiente
-vercel env add CREWAI_API_URL production
-
-# Quando solicitado, inserir:
-# api.falachefe.app.br
-
-# Ou via CLI direto:
+# Remover variável antiga (se existir)
 vercel env rm CREWAI_API_URL production
-vercel env add CREWAI_API_URL production <<< "https://api.falachefe.app.br"
 
-# Deploy para aplicar
+# Adicionar nova
+echo "https://api.falachefe.app.br" | vercel env add CREWAI_API_URL production
+
+# Redeploy
 vercel --prod
 ```
 
-**Ou via Dashboard Vercel:**
-
-1. Acesse https://vercel.com/tiago-6739s-projects/falachefe
-2. Vá em **Settings** → **Environment Variables**
-3. Encontre `CREWAI_API_URL`
-4. Editar valor para: `https://api.falachefe.app.br`
-5. Salvar
-6. Fazer novo deploy (Dashboard → Deployments → Redeploy)
-
-### 4.3 Atualizar Scripts de Teste
+### 4.2 Verificar .env Local (Desenvolvimento)
 
 ```bash
 cd /Users/tiagoyokoyama/Falachefe
 
-# Atualizar scripts
-sed -i '' 's|https://falachefe.app.br|https://api.falachefe.app.br|g' scripts/testing/*.sh
-
-# Commit das alterações
-git add .
-git commit -m "chore: atualizar domínio para api.falachefe.app.br"
-git push origin master
+# Adicionar ao seu .env local (se não existir)
+echo "CREWAI_API_URL=https://api.falachefe.app.br" >> .env
 ```
 
 ---
 
-## 📊 PASSO 5: Monitoramento Pós-Deploy
+## 📊 PASSO 5: Validação Final
 
-### 5.1 Verificar Logs do Traefik
+### 5.1 Checklist Servidor
 
 ```bash
 ssh root@37.27.248.13
 
-# Logs do Traefik
-docker service logs traefik_traefik -f --tail=100 | grep "api.falachefe"
+# DNS resolve
+dig +short api.falachefe.app.br
+# ✅ Deve retornar: 37.27.248.13
+
+# Serviço rodando
+docker service ls | grep falachefe
+# ✅ Deve mostrar: 1/1
+
+# Health check OK
+curl -s https://api.falachefe.app.br/health | jq .status
+# ✅ Deve retornar: "healthy"
+
+# SSL válido
+curl -sI https://api.falachefe.app.br/health | head -1
+# ✅ Deve retornar: HTTP/2 200
 ```
 
-### 5.2 Verificar Logs da API
+### 5.2 Checklist Aplicação
 
 ```bash
-# Logs do serviço CrewAI
-docker service logs falachefe_crewai-api -f --tail=100
+# Do seu Mac
+
+# Verificar Vercel tem variável
+vercel env ls production | grep CREWAI_API_URL
+# ✅ Deve listar a variável
+
+# Testar integração end-to-end (via aplicação)
+curl -X POST https://falachefe.app.br/api/test-crewai \
+  -H "Content-Type: application/json" \
+  -d '{"message":"teste"}'
+# ✅ Deve processar via api.falachefe.app.br
 ```
 
-### 5.3 Monitorar Métricas
+---
 
-```bash
-# Métricas Prometheus
-curl -s https://api.falachefe.app.br/metrics | grep falachefe_uptime
+## 🎉 RESULTADO FINAL
 
-# Ou acessar dashboard (se configurado)
-# Prometheus: http://37.27.248.13:9090
-# Grafana: http://37.27.248.13:3000
+Após completar todos os passos:
+
+### Domínios Configurados
+
+| Domínio | Serviço | Status |
+|---------|---------|--------|
+| `falachefe.app.br` | Aplicação Next.js (Vercel) | ✅ Inalterado |
+| `api.falachefe.app.br` | API CrewAI (Hetzner) | ✅ Novo |
+
+### Endpoints Disponíveis
+
+**Aplicação (Vercel)**:
+- `https://falachefe.app.br/` - Frontend
+- `https://falachefe.app.br/dashboard` - Dashboard
+- `https://falachefe.app.br/api/auth/*` - Autenticação
+- `https://falachefe.app.br/api/webhook/uaz` - Webhook WhatsApp
+
+**API CrewAI (Hetzner)**:
+- `https://api.falachefe.app.br/health` - Health check
+- `https://api.falachefe.app.br/metrics` - Métricas
+- `https://api.falachefe.app.br/process` - Processar mensagem
+- `https://api.falachefe.app.br/process-audio` - Processar áudio
+- `https://api.falachefe.app.br/process-image` - Processar imagem
+
+### Fluxo de Integração
+
+```
+WhatsApp → UAZAPI → falachefe.app.br/api/webhook/uaz
+                   → MessageRouter analisa
+                   → api.falachefe.app.br/process
+                   → CrewAI processa
+                   → Resposta → UAZAPI → WhatsApp
 ```
 
 ---
@@ -370,25 +419,28 @@ curl -s https://api.falachefe.app.br/metrics | grep falachefe_uptime
 ### Problema 1: DNS não resolve
 
 ```bash
-# Verificar DNS
+# Verificar
 dig api.falachefe.app.br
 
 # Se não resolver:
-# - Verificar configuração no provedor DNS
-# - Aguardar propagação (até 24h)
-# - Limpar cache DNS local: sudo dscacheutil -flushcache (Mac)
+# 1. Verificar configuração no provedor DNS
+# 2. Aguardar propagação (até 24h)
+# 3. Limpar cache DNS local:
+sudo dscacheutil -flushcache  # Mac
+sudo systemd-resolve --flush-caches  # Linux
 ```
 
 ### Problema 2: Certificado SSL não gera
 
 ```bash
-# Verificar logs do Traefik
+# Verificar logs Traefik
+ssh root@37.27.248.13
 docker logs traefik_traefik.1.XXX | grep -i "acme\|letsencrypt\|api.falachefe"
 
-# Problemas comuns:
-# - Porta 80/443 não acessível externamente
+# Causas comuns:
+# - Portas 80/443 bloqueadas no firewall
 # - DNS não propagado
-# - Rate limit Let's Encrypt (5 certs/week por domínio)
+# - Rate limit Let's Encrypt (5 certs/semana)
 
 # Solução: Forçar renovação
 docker service update --force falachefe_crewai-api
@@ -397,80 +449,57 @@ docker service update --force falachefe_crewai-api
 ### Problema 3: Erro 502 Bad Gateway
 
 ```bash
-# Verificar se serviço está rodando
+# Verificar serviço
+ssh root@37.27.248.13
 docker service ps falachefe_crewai-api
 
 # Verificar logs
 docker service logs falachefe_crewai-api --tail=50
 
-# Restart do serviço
+# Restart
 docker service update --force falachefe_crewai-api
 ```
 
-### Problema 4: Domínio antigo ainda responde
+### Problema 4: Timeout ao processar
 
 ```bash
-# Normal! Ambos podem coexistir
-# Para remover o antigo, edite docker-stack.yml e remova as labels do domínio antigo
+# Aumentar timeout no docker-stack.yml
+GUNICORN_TIMEOUT=300  # 5 minutos
 
-# Depois:
+# Redeploy
 docker stack deploy -c docker-stack.yml falachefe --with-registry-auth
 ```
 
 ---
 
-## 🎯 CHECKLIST FINAL
+## 📝 COMANDOS ÚTEIS
 
 ### Servidor Hetzner
-- [ ] DNS `api.falachefe.app.br` → `37.27.248.13` configurado
-- [ ] `docker-stack.yml` atualizado com novo domínio
-- [ ] Stack redeployada: `docker stack deploy -c docker-stack.yml falachefe`
-- [ ] Certificado SSL gerado pelo Traefik
-- [ ] HTTPS funcionando: `curl https://api.falachefe.app.br/health`
-- [ ] Redirect HTTP→HTTPS ativo
-
-### Integrações
-- [ ] Webhook UAZAPI atualizado
-- [ ] Variável `CREWAI_API_URL` no Vercel atualizada
-- [ ] Deploy do Vercel realizado
-- [ ] Scripts de teste atualizados
-
-### Testes
-- [ ] Health check: `curl https://api.falachefe.app.br/health`
-- [ ] Processamento: `curl -X POST https://api.falachefe.app.br/process ...`
-- [ ] Webhook WhatsApp funcionando
-- [ ] Logs sem erros
-
----
-
-## 📝 COMANDOS DE REFERÊNCIA RÁPIDA
-
-### No Servidor Hetzner
 
 ```bash
 # Conectar
 ssh root@37.27.248.13
 
-# Ir para diretório
-cd /opt/falachefe-crewai
+# Status
+docker service ls
+docker service ps falachefe_crewai-api
 
-# Ver status
-docker service ls | grep falachefe
-
-# Ver logs
+# Logs
 docker service logs falachefe_crewai-api -f
+docker service logs traefik_traefik -f | grep api.falachefe
 
 # Restart
 docker service update --force falachefe_crewai-api
 
 # Redeploy
+cd /opt/falachefe-crewai
 docker stack deploy -c docker-stack.yml falachefe --with-registry-auth
 ```
 
 ### Do Seu Mac
 
 ```bash
-# Testar health
+# Testar API
 curl -s https://api.falachefe.app.br/health | jq
 
 # Testar processamento
@@ -478,58 +507,24 @@ curl -X POST https://api.falachefe.app.br/process \
   -H "Content-Type: application/json" \
   -d '{"message":"teste","userId":"123","phoneNumber":"5511999999999","context":{}}'
 
-# Deploy Vercel
-cd /Users/tiagoyokoyama/Falachefe
-vercel --prod
+# Verificar DNS
+dig +short api.falachefe.app.br
+
+# Verificar SSL
+curl -vI https://api.falachefe.app.br/health 2>&1 | grep "SSL\|certificate"
 ```
 
 ---
 
-## 🎉 RESULTADO ESPERADO
+## 📚 DOCUMENTAÇÃO RELACIONADA
 
-Após concluir todos os passos:
-
-✅ **Novo domínio**: https://api.falachefe.app.br  
-✅ **HTTPS ativo**: Certificado Let's Encrypt  
-✅ **Redirect HTTP→HTTPS**: Automático  
-✅ **Webhook UAZAPI**: Atualizado  
-✅ **Integração Vercel**: Funcionando  
-
-**Endpoints disponíveis:**
-- `https://api.falachefe.app.br/health` - Health check
-- `https://api.falachefe.app.br/metrics` - Métricas Prometheus
-- `https://api.falachefe.app.br/process` - Processamento CrewAI
+- **`ARQUITETURA-DOMINIOS.md`** - Visão completa da arquitetura de domínios
+- **`DOMINIO-TRAEFIK-SUCCESS.md`** - Setup inicial Traefik
+- **`DEPLOY-HETZNER-SUCCESS.md`** - Deploy inicial Docker Swarm
+- **`MESSAGE-ROUTER-GUIDE.md`** - Sistema de roteamento de mensagens
 
 ---
 
-## 📞 SUPORTE
-
-**Logs em tempo real:**
-```bash
-ssh root@37.27.248.13 'docker service logs falachefe_crewai-api -f'
-```
-
-**Verificar Traefik:**
-```bash
-ssh root@37.27.248.13 'docker service logs traefik_traefik -f | grep api.falachefe'
-```
-
-**Em caso de problemas:**
-1. Verificar DNS propagou
-2. Ver logs do Traefik (certificado SSL)
-3. Ver logs da API (aplicação rodando)
-4. Testar com curl (conectividade)
-
----
-
-**📚 Documentação Relacionada:**
-- `DOMINIO-TRAEFIK-SUCCESS.md` - Setup inicial Traefik
-- `DEPLOY-HETZNER-SUCCESS.md` - Deploy inicial
-- `DOCKER-COMPOSE-SETUP-COMPLETO.md` - Setup Docker
-
----
-
-**✅ ATUALIZAÇÃO CONCLUÍDA!**
-
-Documentação atualizada em: 10 de Outubro de 2025
-
+**Status**: ✅ Guia Oficial de Setup  
+**Última Atualização**: 11 de Outubro de 2025  
+**Próxima Ação**: Executar passos 1-5 neste documento
