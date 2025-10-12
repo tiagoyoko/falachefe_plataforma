@@ -1,0 +1,73 @@
+---
+alwaysApply: true
+description: Acompanhar deploys usando Vercel MCP
+---
+
+# Vercel Deploy - Uso de Vercel MCP
+
+## Sempre Use Vercel MCP para Verificar Deploys
+
+Após fazer push para GitHub, **SEMPRE** verificar o deploy na Vercel usando MCP.
+
+## Informações do Projeto Vercel
+
+- **Project ID**: `prj_SyUWhD6Qi7lAqJ3SaMxk7JgmhcZl`
+- **Team ID**: `team_a1QqoDU5jxv6sUlIZM8b7xII`
+- **Domínio**: `falachefe.app.br`
+
+## Comandos Vercel MCP
+
+### 1. Listar Últimos Deploys
+
+```typescript
+await mcp_Vercel_list_deployments({
+  projectId: "prj_SyUWhD6Qi7lAqJ3SaMxk7JgmhcZl",
+  teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+});
+```
+
+### 2. Ver Detalhes de um Deploy
+
+```typescript
+await mcp_Vercel_get_deployment({
+  idOrUrl: "dpl_...", // ID do deployment
+  teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+});
+```
+
+### 3. Ver Logs de Build
+
+```typescript
+await mcp_Vercel_get_deployment_build_logs({
+  deploymentId: "dpl_...",
+  teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+});
+```
+
+## Fluxo Após Push
+
+1. **Fazer push** via GitHub MCP
+2. **Aguardar 30s** para Vercel detectar
+3. **Listar deploys** com `mcp_Vercel_list_deployments`
+4. **Verificar status**: `READY`, `BUILDING`, `ERROR`
+5. **Se ERROR**: Ver logs com `mcp_Vercel_get_deployment_build_logs`
+6. **Informar usuário** sobre status do deploy
+
+## Status de Deploy
+
+- `BUILDING`: Deploy em andamento (aguardar)
+- `READY`: Deploy concluído com sucesso ✅
+- `ERROR`: Deploy falhou ❌
+- `CANCELED`: Deploy cancelado
+
+## Tempo Médio de Deploy
+
+- Build: 1-3 minutos
+- Deploy: ~30 segundos
+- Total: 2-4 minutos
+
+## URLs de Acesso
+
+- **Produção**: https://falachefe.app.br
+- **Chat**: https://falachefe.app.br/chat
+- **API**: https://falachefe.app.br/api/*
