@@ -44,19 +44,9 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Users (Usuários finais via WhatsApp)
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  phoneNumber: varchar("phone_number", { length: 20 }).unique().notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
-  optInStatus: boolean("opt_in_status").default(false),
-  lastInteraction: timestamp("last_interaction"),
-  windowExpiresAt: timestamp("window_expires_at"),
-  preferences: jsonb("preferences").default({}),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// DEPRECATED: Tabela users removida
+// Usamos user_onboarding diretamente para dados de WhatsApp
+// Mantido aqui apenas para compatibilidade de exports
 
 // Agents (Agentes especializados de IA)
 export const agents = pgTable("agents", {
@@ -76,7 +66,7 @@ export const agents = pgTable("agents", {
 // Conversations (Conversas entre usuários e agentes)
 export const conversations = pgTable("conversations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }).notNull(),
+  userId: text("user_id").notNull(), // Referencia user_onboarding.user_id (TEXT)
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
   currentAgentId: uuid("current_agent_id").references(() => agents.id),
   status: conversationStatusEnum("status").default("active"),
@@ -93,7 +83,7 @@ export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }).notNull(),
   senderType: senderTypeEnum("sender_type").notNull(),
-  senderId: uuid("sender_id").notNull(),
+  senderId: text("sender_id").notNull(), // TEXT para aceitar user_id ou agent_id
   content: text("content").notNull(),
   messageType: messageTypeEnum("message_type").notNull(),
   uazMessageId: varchar("uaz_message_id", { length: 255 }),
@@ -104,7 +94,7 @@ export const messages = pgTable("messages", {
   readAt: timestamp("read_at"),
 });
 
-// Templates (Templates de mensagens aprovadas)
+// Templates (Templates de mensagem WhatsApp)
 export const templates = pgTable("templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
@@ -119,82 +109,15 @@ export const templates = pgTable("templates", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Shared Memories (Memórias compartilhadas entre agentes)
-export const sharedMemories = pgTable("shared_memories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
-  memoryType: sharedMemoryTypeEnum("memory_type").notNull(),
-  content: jsonb("content").notNull(),
-  accessLevel: accessLevelEnum("access_level").default("public"),
-  tags: text("tags").array().default([]),
-  isActive: boolean("is_active").default(true),
-  createdBy: uuid("created_by"),
-  lastUpdatedBy: uuid("last_updated_by"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Agent Learnings (Aprendizados de agentes)
-export const agentLearnings = pgTable("agent_learnings", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  agentId: uuid("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull(),
-  learningType: learningTypeEnum("learning_type").notNull(),
-  pattern: jsonb("pattern").notNull(),
-  confidence: integer("confidence").default(50),
-  successRate: integer("success_rate").default(0),
-  usageCount: integer("usage_count").default(0),
-  isValidated: boolean("is_validated").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Admin Users (Usuários administradores da empresa)
-export const adminUsers = pgTable("admin_users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: varchar("email", { length: 255 }).unique().notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  role: roleEnum("role").default("analyst"),
-  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
-  isActive: boolean("is_active").default(true),
-  lastLoginAt: timestamp("last_login_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// User Onboarding (Dados de onboarding dos usuários)
-export const userOnboarding = pgTable("user_onboarding", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 255 }).unique().notNull(),
-  firstName: varchar("first_name", { length: 100 }).notNull(),
-  lastName: varchar("last_name", { length: 100 }).notNull(),
-  companyName: varchar("company_name", { length: 255 }).notNull(),
-  position: varchar("position", { length: 100 }).notNull(),
-  companySize: companySizeEnum("company_size").notNull(),
-  industry: varchar("industry", { length: 100 }).notNull(),
-  whatsappPhone: varchar("whatsapp_phone", { length: 20 }).notNull(),
-  isCompleted: boolean("is_completed").default(false).notNull(),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
-  users: many(users),
   agents: many(agents),
   conversations: many(conversations),
   templates: many(templates),
-  sharedMemories: many(sharedMemories),
-  adminUsers: many(adminUsers),
 }));
 
-export const usersRelations = relations(users, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [users.companyId],
-    references: [companies.id],
-  }),
-  conversations: many(conversations),
-}));
+// DEPRECATED: Relations para tabela users removida
+// Conversas agora usam user_onboarding.user_id diretamente
 
 export const agentsRelations = relations(agents, ({ one, many }) => ({
   company: one(companies, {
@@ -202,14 +125,9 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
     references: [companies.id],
   }),
   conversations: many(conversations),
-  learnings: many(agentLearnings),
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
-  user: one(user, {
-    fields: [conversations.userId],
-    references: [user.id],
-  }),
   company: one(companies, {
     fields: [conversations.companyId],
     references: [companies.id],
@@ -228,16 +146,69 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
-export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+export const templatesRelations = relations(templates, ({ one }) => ({
   company: one(companies, {
-    fields: [adminUsers.companyId],
+    fields: [templates.companyId],
     references: [companies.id],
   }),
 }));
 
-export const agentLearningsRelations = relations(agentLearnings, ({ one }) => ({
-  agent: one(agents, {
-    fields: [agentLearnings.agentId],
-    references: [agents.id],
+// Financial Categories table
+export const financialCategories = pgTable("financial_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  color: varchar("color", { length: 7 }), // Hex color code
+  isDefault: boolean("is_default").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  userId: varchar("user_id", { length: 100 }), // NULL for global categories
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Financial Data table
+export const financialData = pgTable("financial_data", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: varchar("type", { length: 20 }).notNull(),
+  amount: integer("amount").notNull(), // Stored in cents
+  description: text("description").notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  date: timestamp("date").notNull(),
+  userId: varchar("user_id", { length: 100 }).notNull(),
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// User Onboarding table
+export const userOnboarding = pgTable("user_onboarding", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 100 }).unique().notNull(), // Better Auth user ID
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  position: varchar("position", { length: 255 }).notNull(),
+  companySize: companySizeEnum("company_size").notNull(),
+  industry: varchar("industry", { length: 255 }).notNull(),
+  whatsappPhone: varchar("whatsapp_phone", { length: 20 }).notNull(),
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations
+export const financialCategoriesRelations = relations(financialCategories, ({ one }) => ({
+  company: one(companies, {
+    fields: [financialCategories.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const financialDataRelations = relations(financialData, ({ one }) => ({
+  category: one(financialCategories, {
+    fields: [financialData.category],
+    references: [financialCategories.name],
   }),
 }));
