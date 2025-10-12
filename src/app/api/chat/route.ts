@@ -68,32 +68,42 @@ export async function POST(request: NextRequest) {
       messageLength: message.length
     });
 
+    const requestBody = {
+      message: message,           // API espera "message"
+      userId: userId,             // API espera "userId"
+      phoneNumber: '+5500000000', // API exige phoneNumber (dummy para web)
+      context: context            // API aceita "context"
+    };
+    
+    console.log('📤 Request Body:', JSON.stringify(requestBody, null, 2));
+
+    const startTime = Date.now();
     const crewAIResponse = await fetch(crewAIUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        message: message,           // API espera "message"
-        userId: userId,             // API espera "userId"
-        phoneNumber: '+5500000000', // API exige phoneNumber (dummy para web)
-        context: context            // API aceita "context"
-      })
+      body: JSON.stringify(requestBody)
     });
+    const elapsed = Date.now() - startTime;
+    
+    console.log(`⏱️ CrewAI Response Time: ${elapsed}ms, Status: ${crewAIResponse.status}`);
 
     if (!crewAIResponse.ok) {
-      const errorData = await crewAIResponse.json().catch(() => ({}));
+      const errorText = await crewAIResponse.text();
       console.error('❌ CrewAI endpoint error:', {
         status: crewAIResponse.status,
         statusText: crewAIResponse.statusText,
-        error: errorData
+        errorText: errorText.substring(0, 500),
+        elapsed: `${elapsed}ms`
       });
 
       // Retornar erro amigável ao usuário
       return NextResponse.json(
         {
           error: 'Erro ao processar mensagem',
-          content: errorData.response || 'Desculpe, houve um erro ao processar sua mensagem. Tente novamente em instantes.',
+          content: 'Desculpe, houve um erro ao processar sua mensagem. Tente novamente em instantes.',
+          debug: process.env.NODE_ENV === 'development' ? errorText.substring(0, 200) : undefined,
           success: false
         },
         { status: 500 }
