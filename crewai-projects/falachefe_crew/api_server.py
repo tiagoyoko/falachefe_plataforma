@@ -263,21 +263,33 @@ def process_message():
         # Extrair resposta (pode ser string ou objeto)
         response_text = str(result)
         
-        # Enviar resposta para o usuário via UAZAPI
-        print("📤 Sending response to user...", file=sys.stderr)
-        send_result = send_to_uazapi(phone_number, response_text)
+        # Detectar se é chat web ou WhatsApp
+        is_web_chat = phone_number == '+5500000000' or context.get('source') == 'web-chat'
+        
+        send_result = {
+            "success": True,
+            "source": "web-chat" if is_web_chat else "whatsapp"
+        }
+        
+        # Enviar resposta via UAZAPI apenas para WhatsApp
+        if not is_web_chat:
+            print("📤 Sending response to WhatsApp user...", file=sys.stderr)
+            send_result = send_to_uazapi(phone_number, response_text)
+        else:
+            print("💬 Web chat - skipping UAZAPI send", file=sys.stderr)
         
         # Retornar resultado
         return jsonify({
             "success": True,
             "response": response_text,
-            "sent_to_user": send_result.get("success", False),
+            "sent_to_user": send_result.get("success", True),  # True para web chat
             "uazapi_messageid": send_result.get("messageid"),
+            "source": send_result.get("source", "whatsapp"),
             "metadata": {
                 "processed_at": datetime.now().isoformat(),
                 "processing_time_ms": processing_time,
                 "user_id": user_id,
-                "phone_number": phone_number
+                "phone_number": phone_number if not is_web_chat else "web-chat"
             }
         })
         
@@ -286,8 +298,9 @@ def process_message():
         import traceback
         traceback.print_exc(file=sys.stderr)
         
-        # Tentar enviar mensagem de erro ao usuário
-        if phone_number:
+        # Tentar enviar mensagem de erro ao usuário (apenas WhatsApp)
+        is_web_chat = phone_number == '+5500000000' or context.get('source') == 'web-chat'
+        if phone_number and not is_web_chat:
             send_to_uazapi(
                 phone_number,
                 "Desculpe, houve um erro ao processar sua mensagem. Tente novamente em alguns instantes."
