@@ -244,3 +244,4 @@ curl -X POST https://falachefe.app.br/api/chat \
 **✅ Correção validada e documentada!**  
 **Pronto para testes e deploy.**
 
+
