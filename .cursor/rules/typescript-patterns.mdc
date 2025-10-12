@@ -1,0 +1,221 @@
+---
+globs: *.ts,*.tsx
+description: Padrões TypeScript para o projeto
+---
+
+# TypeScript Patterns - FalaChefe
+
+## Regras de Código
+
+### 1. Sempre Use Tipos Explícitos
+
+```typescript
+// ✅ CORRETO
+async function processMessage(
+  message: UAZMessage,
+  chat: UAZChat,
+  owner: string
+): Promise<ProcessMessageResult> {
+  // ...
+}
+
+// ❌ EVITAR
+async function processMessage(message, chat, owner) {
+  // ...
+}
+```
+
+### 2. Evite `any`
+
+```typescript
+// ✅ CORRETO
+interface QueuePayload {
+  message: string;
+  userId: string;
+  phoneNumber: string;
+  context: Record<string, unknown>;
+}
+
+const payload: QueuePayload = {...};
+
+// ❌ EVITAR
+const payload: any = {...};
+```
+
+### 3. Use Template Strings SQL do Drizzle
+
+```typescript
+import { sql } from 'drizzle-orm';
+
+// ✅ CORRETO
+const results = await db.execute(
+  sql`SELECT * FROM users WHERE phone = ${phoneNumber}`
+);
+
+// ❌ EVITAR
+const results = await db.execute(
+  `SELECT * FROM users WHERE phone = '${phoneNumber}'`
+);
+```
+
+### 4. Interfaces de Resultado
+
+```typescript
+// ✅ CORRETO - Interface clara
+export interface ProcessMessageResult {
+  success: boolean;
+  requiresCompanySetup?: boolean;
+  standardMessage?: string;
+  message: {
+    id: string;
+    content: string;
+  };
+  user: {
+    id: string;
+    name: string;
+    phoneNumber: string;
+  };
+}
+
+// Uso
+const result: ProcessMessageResult = await processMessage(...);
+if (result.requiresCompanySetup) {
+  // Handle
+}
+```
+
+### 5. Error Handling
+
+```typescript
+// ✅ CORRETO
+try {
+  const result = await someOperation();
+  return result;
+} catch (error) {
+  console.error('Operation failed:', error);
+  // Não re-lançar se for erro esperado
+  return defaultValue;
+}
+
+// ❌ EVITAR catch vazio
+try {
+  // ...
+} catch (e) {
+  // Silencioso
+}
+```
+
+### 6. Logging Estruturado
+
+```typescript
+// ✅ CORRETO
+console.log('📨 MessageService: Processing', {
+  messageId: message.id,
+  sender: message.sender,
+  timestamp: new Date().toISOString()
+});
+
+// ❌ EVITAR
+console.log('Processing message ' + message.id);
+```
+
+## Padrões do Projeto
+
+### API Routes (Next.js)
+
+```typescript
+// src/app/api/[route]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    // Validações
+    if (!body.field) {
+      return NextResponse.json(
+        { error: 'field is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Processamento
+    const result = await process(body);
+    
+    return NextResponse.json({
+      success: true,
+      data: result
+    });
+    
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    service: 'Service Name',
+    timestamp: new Date().toISOString()
+  });
+}
+```
+
+### Services
+
+```typescript
+// src/services/[service]-service.ts
+export class ServiceName {
+  
+  static async publicMethod(): Promise<Result> {
+    // Lógica pública
+  }
+  
+  private static async privateHelper(): Promise<void> {
+    // Lógica privada
+  }
+}
+```
+
+## Lint e Build
+
+Antes de commit:
+
+```bash
+# 1. Lint
+npm run lint
+
+# 2. Type check  
+npm run build
+
+# 3. Corrigir erros
+# 4. Commit com GitHub MCP
+```
+
+## Imports
+
+```typescript
+// Ordem preferida:
+// 1. Node/Next.js
+import { NextRequest, NextResponse } from 'next/server';
+
+// 2. Libraries externas
+import { sql } from 'drizzle-orm';
+
+// 3. Código interno
+import { db } from '@/lib/db';
+import { MessageService } from '@/services/message-service';
+import type { UAZMessage } from '@/lib/uaz-api/types';
+```
+
+## Nomenclatura
+
+- **Arquivos**: kebab-case (`message-service.ts`)
+- **Classes**: PascalCase (`MessageService`)
+- **Funções**: camelCase (`processMessage`)
+- **Constantes**: SCREAMING_SNAKE_CASE (`CREWAI_API_URL`)
+- **Interfaces**: PascalCase com sufixo descritivo (`ProcessMessageResult`)
