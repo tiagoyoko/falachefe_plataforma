@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { userOnboarding } from "@/lib/schema";
+import { companies, userSubscriptions, subscriptionPlans } from "@/lib/billing-schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth/auth";
 // TODO: Reativar integração com perfil quando necessário
@@ -139,6 +140,80 @@ export async function POST(request: NextRequest) {
       //   console.warn('⚠️ Erro ao integrar com sistema de perfil:', profileError);
       //   // Não falhar o onboarding por causa do perfil
       // }
+
+      // ✨ NOVO: Criar empresa e subscription automaticamente quando onboarding completado
+      if (data.isCompleted) {
+        try {
+          console.log('🏢 Onboarding completado: criando empresa e subscription...');
+          
+          // 1. Criar ou buscar empresa
+          const company = await db.select()
+            .from(companies)
+            .where(eq(companies.name, data.companyName))
+            .limit(1);
+          
+          let companyId: string;
+          
+          if (company.length === 0) {
+            // Criar nova empresa
+            const [newCompany] = await db.insert(companies).values({
+              name: data.companyName,
+              domain: data.companyName.toLowerCase().replace(/\s+/g, '') + '.falachefe.app.br',
+              uazToken: '', // Será preenchido depois ao conectar WhatsApp
+              uazAdminToken: '',
+              subscriptionPlan: 'starter',
+              isActive: true,
+              settings: {},
+            }).returning();
+            
+            companyId = newCompany.id;
+            console.log('✅ Empresa criada:', newCompany.name);
+          } else {
+            companyId = company[0].id;
+            console.log('✅ Empresa existente encontrada:', company[0].name);
+          }
+          
+          // 2. Buscar plano starter
+          const starterPlan = await db.select()
+            .from(subscriptionPlans)
+            .where(eq(subscriptionPlans.slug, 'starter'))
+            .limit(1);
+          
+          if (starterPlan.length === 0) {
+            console.error('❌ Plano starter não encontrado!');
+          } else {
+            // 3. Verificar se já existe subscription
+            const existingSubscription = await db.select()
+              .from(userSubscriptions)
+              .where(eq(userSubscriptions.userId, session.user.id))
+              .limit(1);
+            
+            if (existingSubscription.length === 0) {
+              // Criar subscription
+              await db.insert(userSubscriptions).values({
+                userId: session.user.id,
+                companyId: companyId,
+                planId: starterPlan[0].id,
+                status: 'active',
+                billingCycle: 'monthly',
+                startDate: new Date(),
+              });
+              
+              console.log('✅ Subscription criada:', {
+                userId: session.user.id,
+                companyId: companyId,
+                planId: starterPlan[0].id
+              });
+            } else {
+              console.log('ℹ️ Subscription já existe para este usuário');
+            }
+          }
+        } catch (companyError) {
+          console.error('❌ Erro ao criar empresa/subscription:', companyError);
+          // Não falhar o onboarding por causa disso
+          // Usuário pode criar empresa manualmente depois
+        }
+      }
 
       return NextResponse.json({
         success: true,
