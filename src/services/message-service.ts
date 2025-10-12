@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { users, conversations, messages, companies } from '@/lib/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import type { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
 
 /**
@@ -8,6 +8,8 @@ import type { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
  */
 export interface ProcessMessageResult {
   success: boolean;
+  requiresCompanySetup?: boolean;  // Novo: indica que usuário precisa cadastrar empresa
+  standardMessage?: string;         // Novo: mensagem padrão a ser enviada
   message: {
     id: string;
     content: string;
@@ -55,6 +57,41 @@ export class MessageService {
         sender: message.sender,
         chatName: chat.name
       });
+
+      // Normalizar número de telefone
+      const normalizedPhone = message.sender.replace('@c.us', '');
+
+      // ✨ NOVO: Verificar se usuário já existe na plataforma
+      const platformUserCheck = await this.checkPlatformUserWithoutCompany(normalizedPhone);
+      
+      if (platformUserCheck.hasUser && !platformUserCheck.hasCompanyRelation) {
+        console.log('⚠️  Usuário existe na plataforma mas sem empresa relacionada', {
+          userId: platformUserCheck.userId,
+          phone: normalizedPhone
+        });
+
+        // Retornar mensagem padrão sem processar
+        return {
+          success: true,
+          requiresCompanySetup: true,
+          standardMessage: this.getCompanySetupMessage(),
+          message: {
+            id: 'no-message-saved',
+            content: message.text || message.content || '',
+            uazMessageId: message.id || message.messageid || ''
+          },
+          conversation: {
+            id: 'no-conversation',
+            status: 'requires_setup'
+          },
+          user: {
+            id: platformUserCheck.userId!,
+            name: platformUserCheck.userName || 'Usuário',
+            phoneNumber: normalizedPhone,
+            isNewUser: false
+          }
+        };
+      }
 
       // 1. Buscar ou criar company (usar company padrão por enquanto)
       const company = await this.getOrCreateDefaultCompany(owner);
@@ -139,6 +176,88 @@ export class MessageService {
   }
 
   /**
+   * Verifica se usuário existe na plataforma mas sem empresa relacionada
+   * 
+   * @param phoneNumber - Número do WhatsApp
+   * @returns Status do usuário
+   */
+  private static async checkPlatformUserWithoutCompany(phoneNumber: string): Promise<{
+    hasUser: boolean;
+    hasCompanyRelation: boolean;
+    userId?: string;
+    userName?: string;
+  }> {
+    try {
+      // Buscar últimos 9 dígitos do telefone (formato padrão BR)
+      const phoneDigits = phoneNumber.replace(/\D/g, '').slice(-9);
+      
+      // Buscar na tabela user_onboarding (usuários que fizeram cadastro na plataforma)
+      const platformUsers = await db.execute<{
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        whatsapp_phone: string;
+        is_completed: boolean;
+      }>(
+        sql`SELECT user_id, first_name, last_name, whatsapp_phone, is_completed
+            FROM user_onboarding
+            WHERE whatsapp_phone LIKE ${'%' + phoneDigits + '%'}
+            LIMIT 1`
+      );
+
+      if (!platformUsers || platformUsers.length === 0) {
+        return { hasUser: false, hasCompanyRelation: false };
+      }
+
+      const platformUser = platformUsers[0];
+      
+      // Verificar se tem subscription ativa (relação com empresa)
+      const subscriptions = await db.execute<{
+        id: string;
+        company_id: string;
+      }>(
+        sql`SELECT id, company_id
+            FROM user_subscriptions
+            WHERE user_id = ${platformUser.user_id}
+              AND status = 'active'
+            LIMIT 1`
+      );
+
+      const hasCompanyRelation = subscriptions && subscriptions.length > 0;
+
+      return {
+        hasUser: true,
+        hasCompanyRelation,
+        userId: platformUser.user_id,
+        userName: `${platformUser.first_name} ${platformUser.last_name}`.trim()
+      };
+
+    } catch (error) {
+      console.error('Error checking platform user:', error);
+      // Em caso de erro, retornar false para não bloquear fluxo
+      return { hasUser: false, hasCompanyRelation: false };
+    }
+  }
+
+  /**
+   * Retorna mensagem padrão para usuários sem empresa cadastrada
+   */
+  private static getCompanySetupMessage(): string {
+    return `👋 Olá! Vi que você já tem cadastro na plataforma FalaChefe.
+
+Para começar a usar os agentes de IA via WhatsApp, você precisa:
+
+1️⃣ Acessar: https://falachefe.app.br
+2️⃣ Fazer login com sua conta
+3️⃣ Cadastrar sua empresa no painel
+4️⃣ Conectar este número de WhatsApp
+
+Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
+
+📞 Dúvidas? Entre em contato pelo site.`;
+  }
+
+  /**
    * Busca ou cria company padrão
    */
   private static async getOrCreateDefaultCompany(owner: string) {
@@ -148,20 +267,32 @@ export class MessageService {
       let company = existingCompanies[0] || null;
 
       if (!company) {
-        // Criar company padrão
-        console.log('🏢 Creating default company for owner:', owner);
-        
-        const [newCompany] = await db.insert(companies).values({
-          name: 'Falachefe - Default',
-          domain: 'falachefe.app.br',
-          uazToken: owner,
-          uazAdminToken: process.env.UAZAPI_ADMIN_TOKEN || owner,
-          subscriptionPlan: 'starter',
-          isActive: true,
-          settings: {}
-        }).returning();
+        // Buscar company pelo domínio (evitar duplicatas)
+        const companiesByDomain = await db.select().from(companies).where(eq(companies.domain, 'falachefe.app.br')).limit(1);
+        company = companiesByDomain[0] || null;
 
-        company = newCompany;
+        if (!company) {
+          // Criar company padrão apenas se realmente não existir
+          console.log('🏢 Creating default company for owner:', owner);
+          
+          const [newCompany] = await db.insert(companies).values({
+            name: 'Falachefe - Default',
+            domain: 'falachefe.app.br',
+            uazToken: owner,
+            uazAdminToken: process.env.UAZAPI_ADMIN_TOKEN || owner,
+            subscriptionPlan: 'starter',
+            isActive: true,
+            settings: {}
+          }).returning();
+
+          company = newCompany;
+        } else {
+          // Atualizar uazToken da empresa existente
+          console.log('🏢 Updating uazToken for existing company');
+          await db.update(companies)
+            .set({ uazToken: owner })
+            .where(eq(companies.id, company.id));
+        }
       }
 
       return company;

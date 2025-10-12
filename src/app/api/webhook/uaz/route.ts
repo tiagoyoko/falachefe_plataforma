@@ -128,11 +128,6 @@ export async function POST(request: NextRequest) {
     // Obter payload bruto para validação de assinatura
     const rawBody = await request.text();
     
-    // Obter assinatura do header (para validação futura)
-    const _signature = request.headers.get('x-uaz-signature') || 
-                      request.headers.get('x-signature') || 
-                      request.headers.get('signature') || '';
-
     // Validação de assinatura desabilitada para testes
     console.log('Webhook received - signature validation skipped for testing');
 
@@ -290,7 +285,7 @@ function decodeBase64IfNeeded(text: string): string {
         return decoded;
       }
     }
-  } catch (e) {
+  } catch {
     // Se falhar, retorna original
     console.log('⚠️ Base64 decode failed, using original text');
   }
@@ -357,6 +352,27 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       userName: result.user.name
     });
 
+      // ✨ NOVO: Verificar se usuário precisa cadastrar empresa
+      if (result.requiresCompanySetup && result.standardMessage) {
+        console.log('📧 Enviando mensagem padrão: usuário precisa cadastrar empresa');
+        
+        try {
+          await sendResponseToUserWithWindowValidation(
+            chat,
+            result.standardMessage,
+            owner,
+            token,
+            result.user.phoneNumber
+          );
+          console.log('✅ Mensagem de setup enviada com sucesso');
+        } catch (error) {
+          console.error('❌ Erro ao enviar mensagem de setup:', error);
+        }
+        
+        // Não processar com CrewAI
+        return;
+      }
+
       // Rotear mensagem baseado no tipo
       if (!message.fromMe) {
         // Classificar e rotear mensagem
@@ -386,8 +402,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           return;
         }
 
-        // Preparar processamento (fora do try para estar disponível no catch)
-        const messageText = decodedText || decodedContent || '';
+        // Preparar processamento
         const baseWorkerUrl = process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL;
         const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
         const payload = MessageRouter.preparePayload(
@@ -420,7 +435,12 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           // Enfileirar mensagem para processamento assíncrono
           const queueResult = await qstash.publishMessage(
             targetEndpoint,
-            payload as any, // Type cast para compatibilidade
+            {
+              message: payload.message || '',
+              userId: payload.userId || '',
+              phoneNumber: payload.phoneNumber || '',
+              context: payload.context || { conversationId: result.conversation.id }
+            },
             {
               retries: routing.destination.retries,
               delay: 0
@@ -487,7 +507,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
  * Processa atualizações de mensagem
  */
 async function handleMessageUpdateEvent(data: { message: UAZMessage; chat: UAZChat; owner: string; token: string }): Promise<void> {
-  const { message, chat, owner, token } = data;
+  const { message, chat, owner } = data;
   
   console.log('Processing message update event:', {
     messageId: message.id,
@@ -510,7 +530,6 @@ async function handleConnectionEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing connection event:', {
     eventType: data.EventType,
     owner: data.owner,
-    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
     baseUrl: data.BaseUrl,
   });
 
@@ -522,7 +541,7 @@ async function handleConnectionEvent(data: UAZWebhookPayload): Promise<void> {
  * Processa eventos de presença
  */
 async function handlePresenceEvent(data: { event: UAZPresenceEvent; owner: string; token: string }): Promise<void> {
-  const { event, owner, token: _token } = data;
+  const { event, owner } = data;
   
   console.log('Processing presence event:', {
     chat: event.Chat,
@@ -536,8 +555,7 @@ async function handlePresenceEvent(data: { event: UAZPresenceEvent; owner: strin
     recipientAlt: event.RecipientAlt,
     broadcastListOwner: event.BroadcastListOwner,
     broadcastRecipients: event.BroadcastRecipients,
-    owner: owner,
-    token: _token ? '***' + _token.slice(-4) : 'N/A',
+    owner: owner
   });
 
   // TODO: Atualizar status de presença do usuário
@@ -552,7 +570,6 @@ async function handleContactsEvent(data: UAZWebhookPayload): Promise<void> {
   console.log('Processing contacts event:', {
     eventType: data.EventType,
     owner: data.owner,
-    token: data.token ? '***' + data.token.slice(-4) : 'N/A',
     baseUrl: data.BaseUrl,
   });
 
@@ -683,42 +700,4 @@ async function sendApprovedTemplate(
   }
 }
 
-/**
- * Envia resposta para o usuário via UAZ API (método legado)
- */
-async function sendResponseToUser(
-  chat: UAZChat,
-  response: string,
-  owner: string,
-  token: string
-): Promise<void> {
-  try {
-    console.log('Sending response to user (legacy):', {
-      chatId: chat.id,
-      chatName: chat.name,
-      responseLength: response.length,
-      owner: owner
-    });
-
-    // Obter UAZ Client
-    const uazClientInstance = await initializeUAZClient();
-
-    // Enviar mensagem via UAZ API
-    const messageData = {
-      number: chat.id,
-      text: response
-    };
-
-    const result = await uazClientInstance.sendTextMessage(messageData);
-    
-    console.log('Response sent successfully:', {
-      messageId: result.data?.id,
-      status: result.data?.status,
-      chatId: chat.id
-    });
-
-  } catch (error) {
-    console.error('Error sending response to user:', error);
-    // Não falhar o processamento por erro de envio
-  }
-}
+// Função sendResponseToUser removida (não utilizada)
