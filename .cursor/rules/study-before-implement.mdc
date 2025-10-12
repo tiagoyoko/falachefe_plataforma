@@ -1,0 +1,130 @@
+---
+alwaysApply: true
+description: Sempre estudar o projeto antes de implementar mudanças
+---
+
+# Regra: Estudar Antes de Implementar
+
+## 🎯 Princípio Fundamental
+
+**SEMPRE** estudar o projeto e a arquitetura existente **ANTES** de propor ou implementar qualquer mudança.
+
+## ✅ Fluxo Correto
+
+### 1. **Entender o Contexto**
+Antes de qualquer implementação, responder:
+
+- ✅ Como o sistema funciona **atualmente** em produção?
+- ✅ Qual é a **arquitetura real** deployada?
+- ✅ Quais **serviços externos** estão sendo usados?
+- ✅ Onde estão os **servidores** (Vercel? Hetzner? Railway?)
+- ✅ Como os **componentes** se comunicam?
+
+### 2. **Ler Documentação**
+
+Consultar **PRIMEIRO** estes arquivos:
+
+#### Arquitetura
+- [docs/architecture/high-level-architecture.md](mdc:docs/architecture/high-level-architecture.md)
+- [ARQUITETURA-DOMINIOS.md](mdc:ARQUITETURA-DOMINIOS.md)
+- [docs/business/project-summary.md](mdc:docs/business/project-summary.md)
+
+#### Deploy e Infraestrutura
+- [DEPLOY-HETZNER-SUCCESS.md](mdc:DEPLOY-HETZNER-SUCCESS.md)
+- [DOMINIO-TRAEFIK-SUCCESS.md](mdc:DOMINIO-TRAEFIK-SUCCESS.md)
+- [INTEGRACAO-COMPLETA-WEBHOOK-CREWAI.md](mdc:INTEGRACAO-COMPLETA-WEBHOOK-CREWAI.md)
+
+#### Código
+- [src/app/api/webhook/uaz/route.ts](mdc:src/app/api/webhook/uaz/route.ts) - Webhook principal
+- [src/services/message-service.ts](mdc:src/services/message-service.ts) - Lógica de mensagens
+
+### 3. **Verificar Estado Atual**
+
+```bash
+# Verificar servidores ativos
+curl https://falachefe.app.br/api/health
+curl http://37.27.248.13:8000/health
+
+# Verificar banco de dados via Supabase MCP
+mcp_supabase_list_tables({
+  project_id: "zpdartuyaergbxmbmtur",
+  schemas: ["public"]
+})
+
+# Verificar deploys via Vercel MCP
+mcp_Vercel_list_deployments({
+  projectId: "prj_SyUWhD6Qi7lAqJ3SaMxk7JgmhcZl",
+  teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+})
+```
+
+### 4. **Planejar Antes de Agir**
+
+Criar documento de análise:
+- Problema identificado
+- Solução proposta
+- Impacto em outros componentes
+- Testes necessários
+
+Exemplo: [ANALISE-PROJETO-CHAT-WEB.md](mdc:ANALISE-PROJETO-CHAT-WEB.md)
+
+### 5. **Implementar com Cuidado**
+
+- Começar pelos arquivos mais específicos
+- Testar incrementalmente
+- Validar com lint: `npm run lint`
+- Build antes de commit: `npm run build`
+
+### 6. **Commit e Deploy**
+
+```typescript
+// 1. Usar GitHub MCP para push
+await mcp_github_create_or_update_file({...});
+
+// 2. Aguardar 30s
+
+// 3. Verificar deploy com Vercel MCP
+await mcp_Vercel_list_deployments({...});
+
+// 4. Validar status
+const deploy = deployments[0];
+if (deploy.state === "READY") {
+  console.log("✅ Deploy concluído");
+} else if (deploy.state === "ERROR") {
+  // Ver logs
+  await mcp_Vercel_get_deployment_build_logs({...});
+}
+```
+
+## ❌ O Que NÃO Fazer
+
+1. ❌ **NÃO** propor Docker local quando já existe servidor em produção
+2. ❌ **NÃO** assumir arquitetura sem verificar
+3. ❌ **NÃO** fazer mudanças sem entender impacto
+4. ❌ **NÃO** ignorar documentação existente
+5. ❌ **NÃO** tentar múltiplas abordagens sem plano
+
+## ✅ O Que Fazer
+
+1. ✅ **LER** documentação existente
+2. ✅ **VERIFICAR** estado atual via MCPs
+3. ✅ **PLANEJAR** mudanças em documento
+4. ✅ **IMPLEMENTAR** incrementalmente
+5. ✅ **VALIDAR** com lint e build
+6. ✅ **USAR** GitHub e Vercel MCPs
+7. ✅ **DOCUMENTAR** mudanças realizadas
+
+## Exemplo de Abordagem Correta
+
+Ver: Session atual onde implementamos chat web
+- Estudei projeto completo
+- Identifiquei servidor Hetzner ativo
+- Corrigi endpoint para apontar para servidor correto
+- Implementei detecção de usuário sem empresa
+- Usei GitHub MCP para push
+- Documentei tudo
+
+## Referências
+
+- [GUIA-DEPLOY-DOCKER-STACK.md](mdc:GUIA-DEPLOY-DOCKER-STACK.md)
+- [TROUBLESHOOTING-SERVIDOR-HETZNER.md](mdc:TROUBLESHOOTING-SERVIDOR-HETZNER.md)
