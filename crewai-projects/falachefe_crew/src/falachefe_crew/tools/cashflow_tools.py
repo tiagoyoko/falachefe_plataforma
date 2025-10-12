@@ -16,9 +16,9 @@ import os
 # ============================================
 
 # URL base da API do Falachefe (pode ser configurada via variável de ambiente)
-API_BASE_URL = os.getenv("FALACHEFE_API_URL", "http://localhost:3000")
+API_BASE_URL = os.getenv("FALACHEFE_API_URL", "https://falachefe.app.br")
 API_TIMEOUT = 30  # segundos
-USE_TEST_MODE = os.getenv("FALACHEFE_TEST_MODE", "true").lower() == "true"  # Usar rota de teste sem auth
+CREWAI_SERVICE_TOKEN = os.getenv("CREWAI_SERVICE_TOKEN", "")  # Token de serviço para autenticação
 
 # ============================================
 # SCHEMAS DE INPUT (Pydantic Models)
@@ -99,12 +99,16 @@ class GetCashflowBalanceTool(BaseTool):
                 start_date = (end_date.replace(day=1) - timedelta(days=1)).replace(day=1)
             
             # Fazer requisição GET para a API
-            endpoint = "test" if USE_TEST_MODE else "transactions"
-            api_url = f"{API_BASE_URL}/api/financial/{endpoint}"
+            api_url = f"{API_BASE_URL}/api/financial/crewai"
             params = {
                 "userId": user_id,
                 "startDate": start_date.strftime("%Y-%m-%d"),
                 "endDate": end_date.strftime("%Y-%m-%d")
+            }
+            
+            headers = {
+                "Content-Type": "application/json",
+                "x-crewai-token": CREWAI_SERVICE_TOKEN
             }
             
             print(f"📤 Consultando saldo na API: {api_url}")
@@ -113,6 +117,7 @@ class GetCashflowBalanceTool(BaseTool):
             response = requests.get(
                 api_url,
                 params=params,
+                headers=headers,
                 timeout=API_TIMEOUT
             )
             
@@ -270,8 +275,12 @@ class AddCashflowTransactionTool(BaseTool):
             }
             
             # Fazer requisição POST para a API
-            endpoint = "test" if USE_TEST_MODE else "transactions"
-            api_url = f"{API_BASE_URL}/api/financial/{endpoint}"
+            api_url = f"{API_BASE_URL}/api/financial/crewai"
+            
+            headers = {
+                "Content-Type": "application/json",
+                "x-crewai-token": CREWAI_SERVICE_TOKEN
+            }
             
             print(f"📤 Enviando transação para API: {api_url}")
             print(f"   Dados: {json.dumps(payload, indent=2)}")
@@ -279,7 +288,7 @@ class AddCashflowTransactionTool(BaseTool):
             response = requests.post(
                 api_url,
                 json=payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 timeout=API_TIMEOUT
             )
             

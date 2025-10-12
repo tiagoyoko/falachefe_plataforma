@@ -74,26 +74,19 @@ class FalachefeCrew():
         )
 
     @agent
-    def marketing_expert(self) -> Agent:
+    def marketing_sales_expert(self) -> Agent:
         """
-        Especialista em Marketing Digital
-        Responsável por estratégias de marketing e presença online
-        """
-        return Agent(
-            config=self.agents_config['marketing_expert'], # type: ignore[index]
-            verbose=True,
-            max_iter=15,
-            allow_delegation=False,
-        )
-    
-    @agent
-    def sales_expert(self) -> Agent:
-        """
-        Especialista em Vendas
-        Responsável por processos comerciais e estratégias de vendas
+        Max - Especialista em Marketing Digital e Vendas
+        Responsável por estratégias integradas de marketing e vendas focadas em performance
+        
+        Domina:
+        - Marketing digital em todos os canais
+        - Processos de vendas escaláveis
+        - Métricas de performance (ROAS, CTR, CPL, Conversão)
+        - Planos práticos de 90 dias
         """
         return Agent(
-            config=self.agents_config['sales_expert'], # type: ignore[index]
+            config=self.agents_config['marketing_sales_expert'], # type: ignore[index]
             verbose=True,
             max_iter=15,
             allow_delegation=False,
@@ -198,27 +191,23 @@ class FalachefeCrew():
         )
     
     # ============================================
-    # TASKS - ÁREA DE MARKETING
+    # TASKS - ÁREA DE MARKETING E VENDAS (UNIFICADO)
     # ============================================
     
     @task
-    def marketing_strategy(self) -> Task:
-        """Task: Desenvolver estratégia de marketing"""
+    def marketing_sales_plan(self) -> Task:
+        """
+        Task: Criar plano integrado de Marketing e Vendas
+        
+        Max entrega um plano prático de 90 dias com:
+        - Estratégia por canal
+        - Cronograma executável
+        - Processos de vendas
+        - KPIs e métricas
+        """
         return Task(
-            config=self.tasks_config['marketing_strategy'], # type: ignore[index]
-            output_file='marketing_strategy.md'
-        )
-    
-    # ============================================
-    # TASKS - ÁREA DE VENDAS
-    # ============================================
-    
-    @task
-    def sales_process(self) -> Task:
-        """Task: Estruturar processo de vendas"""
-        return Task(
-            config=self.tasks_config['sales_process'], # type: ignore[index]
-            output_file='sales_process.md'
+            config=self.tasks_config['marketing_sales_plan'], # type: ignore[index]
+            output_file='marketing_sales_plan.md'
         )
     
     # ============================================

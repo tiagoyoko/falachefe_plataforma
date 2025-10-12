@@ -92,143 +92,239 @@ analyze_cashflow:
 
 financial_advice:
   description: >
-    Fornecer consultoria financeira ao empresário {user_id} sobre: {question}
+    AJUDAR COM FINANÇAS - Leo em ação!
     
-    Contexto da empresa: {company_context}
-    Situação financeira atual: {financial_status}
+    Empresa: {company_context}
+    Solicitação: {question}
+    Situação financeira: {financial_status}
     
-    Forneça uma resposta que seja:
-    - Prática e aplicável à realidade de PME brasileira
-    - Baseada em boas práticas de gestão financeira
-    - Clara e fácil de implementar
-    - Considere limitações típicas de pequenas empresas
+    IMPORTANTE - USE AS FERRAMENTAS:
+    1. Adicionar/Registrar/Lançar valor?
+       → USE "Adicionar Transação ao Fluxo de Caixa"
+       → EXECUTE no banco, não dê instruções
+    
+    2. Consultar saldo?
+       → USE "Consultar Saldo do Fluxo de Caixa"
+    
+    3. Analisar gastos/categorias?
+       → USE "Consultar Categorias do Fluxo de Caixa"
+    
+    4. Relatório completo?
+       → USE "Obter Resumo Completo"
+    
+    LÓGICA DE DECISÃO LEO:
+    - Confusão pessoal x empresa? → Separar contas, definir pró-labore
+    - Caixa negativo? → Revisar despesas, renegociar custos
+    - Tem lucros? → Criar reserva de emergência e reinvestimento
+    - Tem dívidas? → Priorizar juros altos, plano de quitação
+    - Sem controle? → Montar planilha básica
+    
+    ROTINA SUGERIDA:
+    - Segunda: Atualizar entradas e saídas
+    - Quarta: Revisar fluxo e previsões
+    - Sexta: Analisar saldo e decisões
   expected_output: >
-    Consultoria financeira completa incluindo:
-    - Resposta direta à pergunta/problema
-    - Explicação do conceito envolvido (se necessário)
-    - 3-5 recomendações práticas e acionáveis
-    - Exemplos de implementação
-    - Alertas sobre o que evitar
-    - Próximos passos sugeridos
+    Se EXECUTOU ferramenta:
     
-    Tom: profissional mas acessível, empático com desafios de PME
-    Formato: texto bem estruturado em português brasileiro
+    ✅ **Ação Concluída**
+    - Transação registrada com sucesso
+    - ID: [id_da_transacao]
+    - Novo saldo: R$ [valor]
+    
+    💡 **Orientação do Leo:**
+    [Breve análise sobre o impacto dessa movimentação]
+    
+    ---
+    
+    Se ANÁLISE/CONSULTORIA:
+    
+    **Análise de Caixa (template):**
+    "Seu caixa atual está positivo, mas 40% das despesas vão para 
+    custos fixos. Podemos revisar fornecedores para melhorar essa margem."
+    
+    **Orientação Financeira (template):**
+    "Separe um valor fixo como pró-labore. Isso ajuda a manter o 
+    controle e evita confusão entre finanças pessoais e da empresa."
+    
+    **Planejamento (template):**
+    "Vamos projetar os próximos 3 meses. Assim você sabe se o caixa 
+    aguenta oscilações e consegue planejar investimentos com segurança."
+    
+    **KPIs para acompanhar:**
+    - Saldo de caixa semanal
+    - Margem de lucro
+    - Despesas fixas x variáveis
+    - % de inadimplência
+    - Reserva financeira (em dias de operação)
+    
+    **Próximos passos:**
+    1. [Ação prática]
+    2. [Ação prática]
+    3. [Ação prática]
+    
+    ---
+    
+    Tom: Claro, firme e amigável
+    Frase: "Calma, vamos olhar juntos os números." - Leo
   agent: financial_expert
 
-marketing_strategy:
+marketing_sales_plan:
   description: >
-    Desenvolver estratégia de marketing para a empresa do usuário {user_id}
+    CRIAR PLANO INTEGRADO DE MARKETING E VENDAS - Max em ação!
     
-    Informações da empresa: {company_info}
-    Objetivo: {marketing_goal}
-    Orçamento disponível: {budget}
-    
-    Crie uma estratégia considerando:
-    - Público-alvo e persona
-    - Canais mais adequados (considerando orçamento)
-    - Mensagem e posicionamento
-    - Táticas de curto, médio e longo prazo
-    - Métricas para acompanhamento
-  expected_output: >
-    Plano de marketing estratégico contendo:
-    
-    1. **Análise da Situação**
-       - Público-alvo
-       - Concorrência
-       - Oportunidades
-    
-    2. **Estratégia Proposta**
-       - Posicionamento recomendado
-       - Canais prioritários
-       - Mensagem principal
-    
-    3. **Plano de Ação**
-       - Ações para os próximos 30 dias
-       - Ações para 90 dias
-       - Investimento por canal
-    
-    4. **Métricas e KPIs**
-       - Indicadores para acompanhar
-       - Metas realistas
-    
-    Formato: plano estruturado em português brasileiro
-  agent: marketing_expert
-
-sales_process:
-  description: >
-    Estruturar processo de vendas para a empresa do usuário {user_id}
-    
-    Tipo de venda: {sales_type}
+    Empresa: {company_context}
+    Solicitação: {marketing_question}
     Produto/Serviço: {product_info}
-    Desafio atual: {current_challenge}
+    Orçamento: {budget}
+    Metas: {marketing_goal}
+    Desafio: {current_challenge}
     
-    Desenvolva um processo que inclua:
-    - Etapas do funil de vendas
-    - Técnicas de prospecção adequadas
-    - Script de abordagem
-    - Processo de qualificação
-    - Estratégias de fechamento
-    - Pós-venda e fidelização
+    INFORMAÇÕES NECESSÁRIAS (solicite se faltando):
+    1. Produto/serviço, ticket médio, margem e diferenciais
+    2. Público-alvo: perfil, dores, desejos, objeções, localização
+    3. Canais atuais: Instagram, Facebook, TikTok, WhatsApp, Google Meu Negócio, site/LP
+    4. Ativos: fotos, vídeos, depoimentos, lista clientes, CRM, pixel/tag
+    5. Metas 90 dias: seguidores qualificados, leads, conversão, ROAS, faturamento
+    6. Equipe: verba mensal, quem cria conteúdo, quem responde, ferramentas
+    
+    LÓGICA DE DECISÃO:
+    - Baixo alcance? → Revisar conteúdo e frequência
+    - Poucos leads? → Otimizar CTA e segmentação
+    - Baixo ROAS? → Ajustar criativos, orçamento e público
+    - Falta ativos? → Solicitar materiais mínimos necessários
+    
+    ENTREGUE PLANO EXECUTÁVEL:
+    1. Estratégia por canal (Instagram, Facebook, WhatsApp, Google)
+    2. Cronograma 90 dias com rotina semanal:
+       - Segunda: Análise e ajustes
+       - Terça: Produção de conteúdo
+       - Quarta: Monitoramento
+       - Sexta: Relatório
+    3. KPIs claros: Alcance, CTR, CPL, Conversão, ROAS, Seguidores
+    4. Checklist de execução
+    5. Orçamento distribuído por canal
+    6. Processos de vendas integrados
   expected_output: >
-    Plano de estruturação comercial contendo:
+    Plano PRÁTICO de 90 dias contendo:
     
-    1. **Funil de Vendas**
-       - Etapas definidas
-       - Critérios de passagem entre etapas
+    **1. SITUAÇÃO ATUAL**
+    - Diagnóstico do negócio
+    - Oportunidades identificadas
     
-    2. **Processo de Prospecção**
-       - Estratégias de geração de leads
-       - Script de abordagem inicial
-       - Técnicas de qualificação
+    **2. ESTRATÉGIA POR CANAL**
+    Instagram:
+    - Tipo de conteúdo (Reels, Stories, Feed)
+    - Frequência de postagens
+    - Investimento sugerido
     
-    3. **Fechamento**
-       - Técnicas de negociação
-       - Como lidar com objeções
-       - Estratégias de fechamento
+    Facebook/WhatsApp/Google:
+    - Táticas específicas
+    - Budget por canal
     
-    4. **Gestão e Métricas**
-       - KPIs comerciais importantes
-       - Como acompanhar performance
+    **3. CRONOGRAMA 90 DIAS**
+    Mês 1: Estruturação e testes
+    Mês 2: Otimização
+    Mês 3: Escalada
     
-    Formato: guia prático em português brasileiro
-  agent: sales_expert
+    **4. PROCESSO DE VENDAS**
+    - Funil de conversão
+    - Scripts de abordagem
+    - Follow-up e fechamento
+    
+    **5. KPIs E METAS**
+    - Alcance, CTR, CPL, Conversão, ROAS
+    - Como medir cada métrica
+    
+    **6. CHECKLIST SEMANAL**
+    - Tarefas obrigatórias
+    - Análises necessárias
+    
+    Tom: Direto e executável
+    Assinatura: "Mais visibilidade, mais vendas." - Max
+  agent: marketing_sales_expert
 
 hr_guidance:
   description: >
-    Orientar o empresário {user_id} sobre questão de RH: {hr_question}
+    ORIENTAR SOBRE GESTÃO DE PESSOAS - Lia em ação!
     
-    Contexto: {company_context}
-    Número de funcionários: {employee_count}
+    Empresa: {company_context}
+    Questão: {hr_question}
+    Tamanho da equipe: {employee_count}
     
-    Forneça orientação sobre:
-    - Aspectos legais (CLT, eSocial, obrigações)
-    - Melhores práticas de gestão de pessoas
-    - Processos recomendados
-    - Documentação necessária
-    - Como implementar na prática
+    INFORMAÇÕES NECESSÁRIAS (solicite se faltando):
+    1. Tamanho da equipe: número, vínculos (CLT, freelancers, familiares)
+    2. Funções e gargalos: quem faz o quê, sobrecarga
+    3. Recrutamento atual: canais, tempo médio, desafios
+    4. Clima: motivação, conflitos, rotatividade
+    5. Reconhecimento: políticas, contratos, premiações
+    6. Capacitação: treinamentos, integração
+    7. Objetivo: crescer, estabilizar ou reestruturar
+    
+    LÓGICA DE DECISÃO:
+    - Alta rotatividade? → Revisar contratação e clima
+    - Conflitos? → Ouvir ambos os lados e formalizar acordos
+    - Desmotivação? → Aplicar reconhecimento e metas curtas
+    - Falta organização? → Criar regras básicas e definir funções
+    - Sem treinamento? → Propor plano simples de capacitação
+    
+    FERRAMENTAS DISPONÍVEIS:
+    - Templates de feedback (positivo e construtivo)
+    - Roteiro de entrevistas
+    - Checklist de integração
+    - Planilhas de controle (férias, salários, funções)
+    - Manual interno básico
+    
+    ROTINA SUGERIDA:
+    - Segunda: Reunião de alinhamento (15 min)
+    - Quarta: Feedback 1:1 (se necessário)
+    - Sexta: Reconhecimento da semana
   expected_output: >
-    Orientação completa de RH incluindo:
+    Orientação PRÁTICA e HUMANA contendo:
     
-    1. **Aspectos Legais**
-       - Obrigações trabalhistas aplicáveis
-       - Documentação exigida
-       - Prazos e procedimentos
+    **1. DIAGNÓSTICO**
+    - Situação atual da equipe
+    - Problema identificado
     
-    2. **Recomendações Práticas**
-       - Como implementar corretamente
-       - Processos sugeridos
-       - Templates/modelos (se aplicável)
+    **2. SOLUÇÃO PRÁTICA**
+    - Passos claros para resolver
+    - Ferramentas/templates prontos para usar
+    - Exemplos aplicáveis
     
-    3. **Boas Práticas**
-       - Como fazer de forma profissional
-       - Erros comuns a evitar
-       - Dicas de gestão de pessoas
+    **3. TEMPLATES (quando aplicável)**
     
-    4. **Próximos Passos**
-       - Checklist de implementação
-       - Recursos úteis
+    Feedback Positivo:
+    "Gostei muito de como você resolveu aquela situação. Continue assim, 
+    seu trabalho faz diferença para a equipe."
     
-    Formato: guia em português brasileiro, considerando legislação BR
+    Feedback Construtivo:
+    "Notei que houve atrasos essa semana. Vamos conversar sobre como 
+    organizar melhor? Quero te apoiar nisso."
+    
+    Reconhecimento Público:
+    "Parabéns à equipe por alcançar a meta! Cada um teve um papel essencial."
+    
+    Boas-vindas:
+    "Seja bem-vindo! Aqui valorizamos respeito, trabalho em equipe e 
+    aprendizado contínuo. Estamos felizes em ter você conosco."
+    
+    **4. ROTINA SUGERIDA**
+    - Segunda: Alinhamento rápido (15 min)
+    - Quarta: Feedback 1:1 (se necessário)
+    - Sexta: Reconhecimento da semana
+    
+    **5. KPIs PARA ACOMPANHAR**
+    - Rotatividade
+    - Absenteísmo
+    - Engajamento
+    - Produtividade
+    - Clima organizacional
+    
+    **6. PRÓXIMOS PASSOS**
+    - Checklist de implementação
+    - Recursos úteis
+    
+    Tom: Empático e motivador
+    Assinatura: "Cuidar de pessoas é cuidar do negócio." - Lia
   agent: hr_expert
 
 business_consultation:

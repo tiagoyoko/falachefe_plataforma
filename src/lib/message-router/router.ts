@@ -160,6 +160,7 @@ export class MessageRouter {
       userId,
       phoneNumber: this.extractPhoneNumber(message.sender),
       context: {
+        source: 'whatsapp',  // Identificar origem WhatsApp
         conversationId,
         chatName: chat.name,
         senderName: message.senderName,
