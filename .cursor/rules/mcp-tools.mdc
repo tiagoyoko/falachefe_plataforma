@@ -1,0 +1,188 @@
+---
+alwaysApply: true
+description: Uso correto dos MCPs (GitHub, Vercel, Supabase)
+---
+
+# MCP Tools - Guia de Uso
+
+## MCPs Disponíveis no Projeto
+
+### 1. GitHub MCP
+- ✅ Commits e push
+- ✅ Criação de branches
+- ✅ Pull requests
+- ✅ Issues
+
+### 2. Vercel MCP  
+- ✅ Listar deploys
+- ✅ Ver detalhes do deployment
+- ✅ Logs de build
+- ✅ Status do projeto
+
+### 3. Supabase MCP
+- ✅ Executar SQL
+- ✅ Listar tabelas
+- ✅ Ver logs
+- ✅ Migrations
+
+## Quando Usar Cada MCP
+
+### GitHub MCP - Sempre para Git
+
+```typescript
+// Push de arquivo
+await mcp_github_create_or_update_file({
+  owner: "tiagoyoko",
+  repo: "falachefe_plataforma",
+  branch: "master",
+  path: "src/app/api/chat/route.ts",
+  content: fileContent,
+  message: "feat: implementar endpoint chat"
+});
+
+// Ver commit
+await mcp_github_get_commit({
+  owner: "tiagoyoko",
+  repo: "falachefe_plataforma",
+  sha: "82e4756"
+});
+```
+
+**Vantagens**:
+- Não requer autenticação manual
+- Funciona em sandbox
+- Retorna status detalhado
+
+### Vercel MCP - Após Cada Push
+
+```typescript
+// Listar deployments recentes
+const deploys = await mcp_Vercel_list_deployments({
+  projectId: "prj_SyUWhD6Qi7lAqJ3SaMxk7JgmhcZl",
+  teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+});
+
+// Ver último deploy
+const latest = deploys.deployments.deployments[0];
+console.log(`Status: ${latest.state}`);
+console.log(`URL: ${latest.url}`);
+console.log(`Commit: ${latest.meta.githubCommitSha}`);
+
+// Ver logs se erro
+if (latest.state === "ERROR") {
+  await mcp_Vercel_get_deployment_build_logs({
+    deploymentId: latest.id,
+    teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+  });
+}
+```
+
+**Quando usar**:
+- Após push para GitHub
+- Verificar se deploy completou
+- Debug de erros de build
+- Confirmar produção atualizada
+
+### Supabase MCP - Consultas ao Banco
+
+```typescript
+// Listar tabelas
+await mcp_supabase_list_tables({
+  project_id: "zpdartuyaergbxmbmtur",
+  schemas: ["public"]
+});
+
+// Executar query
+await mcp_supabase_execute_sql({
+  project_id: "zpdartuyaergbxmbmtur",
+  query: `
+    SELECT id, name, phone_number
+    FROM user_onboarding
+    WHERE whatsapp_phone LIKE '%994066248%'
+  `
+});
+
+// Ver logs
+await mcp_supabase_get_logs({
+  project_id: "zpdartuyaergbxmbmtur",
+  service: "postgres"
+});
+```
+
+**Quando usar**:
+- Investigar dados de usuários
+- Debugar problemas de banco
+- Verificar estrutura de tabelas
+- Validar queries antes de implementar
+
+## Fluxo Completo com MCPs
+
+### Cenário: Implementar Nova Feature
+
+```typescript
+// 1. Estudar banco de dados
+const tables = await mcp_supabase_list_tables({...});
+
+// 2. Consultar dados existentes
+const users = await mcp_supabase_execute_sql({
+  query: "SELECT * FROM users LIMIT 5"
+});
+
+// 3. Implementar código
+
+// 4. Testar localmente
+// npm run dev
+
+// 5. Lint e build
+// npm run lint
+// npm run build
+
+// 6. Push com GitHub MCP
+await mcp_github_create_or_update_file({...});
+
+// 7. Aguardar 30s
+await new Promise(resolve => setTimeout(resolve, 30000));
+
+// 8. Verificar deploy Vercel
+const deploys = await mcp_Vercel_list_deployments({...});
+const latest = deploys.deployments.deployments[0];
+
+if (latest.state === "READY") {
+  console.log("✅ Deploy concluído!");
+  console.log(`URL: https://falachefe.app.br`);
+} else {
+  console.log(`Status: ${latest.state}`);
+}
+```
+
+## ❌ Não Use Terminal Para
+
+1. ❌ `git push` - Use GitHub MCP
+2. ❌ `vercel deploy` - Auto-deploy do GitHub
+3. ❌ `psql` - Use Supabase MCP
+
+## ✅ Use Terminal Para
+
+1. ✅ `npm run dev` - Desenvolvimento local
+2. ✅ `npm run lint` - Lint check
+3. ✅ `npm run build` - Build local
+4. ✅ `ssh root@37.27.248.13` - Acesso ao servidor
+
+## IDs do Projeto (Referência Rápida)
+
+```typescript
+const PROJECT_IDS = {
+  github: {
+    owner: "tiagoyoko",
+    repo: "falachefe_plataforma"
+  },
+  vercel: {
+    projectId: "prj_SyUWhD6Qi7lAqJ3SaMxk7JgmhcZl",
+    teamId: "team_a1QqoDU5jxv6sUlIZM8b7xII"
+  },
+  supabase: {
+    projectId: "zpdartuyaergbxmbmtur",
+    region: "sa-east-1"
+  }
+};
+```
