@@ -1,0 +1,128 @@
+---
+alwaysApply: false
+description: Usar Supabase MCP para consultas ao banco de dados
+---
+
+# Database Access - Supabase MCP
+
+## Sempre Use Supabase MCP para Consultas
+
+Quando precisar consultar ou modificar o banco de dados, use **Supabase MCP** ao invés de terminal ou SQL direto.
+
+## Informações do Projeto
+
+- **Project ID**: `zpdartuyaergbxmbmtur`
+- **Region**: `sa-east-1` (São Paulo)
+- **Host**: `db.zpdartuyaergbxmbmtur.supabase.co`
+- **Schema**: `public`
+
+## Comandos Úteis
+
+### Listar Tabelas
+
+```typescript
+await mcp_supabase_list_tables({
+  project_id: "zpdartuyaergbxmbmtur",
+  schemas: ["public"]
+});
+```
+
+### Executar SQL
+
+```typescript
+await mcp_supabase_execute_sql({
+  project_id: "zpdartuyaergbxmbmtur",
+  query: `
+    SELECT id, name, email, phone_number
+    FROM user_onboarding
+    WHERE whatsapp_phone LIKE '%11994066248%'
+    LIMIT 10;
+  `
+});
+```
+
+### Ver Logs
+
+```typescript
+await mcp_supabase_get_logs({
+  project_id: "zpdartuyaergbxmbmtur",
+  service: "postgres"
+});
+```
+
+## Tabelas Principais
+
+### Usuários e Autenticação
+- `user` - Usuários da plataforma (Better Auth)
+- `account` - Contas OAuth
+- `session` - Sessões ativas
+- `user_onboarding` - Dados de cadastro
+
+### Empresas e Assinaturas
+- `companies` - Empresas clientes
+- `subscription_plans` - Planos disponíveis
+- `user_subscriptions` - Relação usuário ↔ empresa
+
+### WhatsApp
+- `conversations` - Conversações
+- `messages` - Mensagens
+
+### CrewAI
+- `agent_memories` - Memória dos agentes
+- `conversation_contexts` - Contextos
+- `user_memory_profiles` - Perfis de usuário
+
+## Queries Comuns
+
+### Buscar Usuário por Telefone
+
+```sql
+SELECT u.id, u.user_id, u.first_name, u.last_name, u.whatsapp_phone
+FROM user_onboarding u
+WHERE u.whatsapp_phone LIKE '%994066248%';
+```
+
+### Verificar Subscription
+
+```sql
+SELECT us.id, us.user_id, us.company_id, c.name as company_name
+FROM user_subscriptions us
+JOIN companies c ON c.id = us.company_id
+WHERE us.user_id = 'xxx'
+  AND us.status = 'active';
+```
+
+### Listar Empresas
+
+```sql
+SELECT id, name, domain, uaz_token, subscription_plan, is_active
+FROM companies
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+## ⚠️ Cuidados
+
+1. **Nunca** expor dados sensíveis nos logs
+2. **Sempre** usar prepared statements (SQL templates)
+3. **Validar** resultados antes de usar
+4. **Tratar** erros graciosamente
+5. **Documentar** queries complexas
+
+## Relacionamento Usuário → Empresa
+
+```
+user_onboarding (cadastro na plataforma)
+    ↓ user_id
+user_subscriptions (assinatura)
+    ↓ company_id
+companies (empresa)
+```
+
+**Importante**: Usuário pode ter cadastro mas **sem subscription** (sem empresa).
+
+## Exemplo Real
+
+Ver implementação em:
+- [src/services/message-service.ts](mdc:src/services/message-service.ts)
+- Método: `checkPlatformUserWithoutCompany()`
