@@ -5,7 +5,7 @@ export interface AgentMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export interface AgentChatState {
@@ -38,6 +38,12 @@ export function useAgentChat(userId?: string): AgentChatState & AgentChatActions
   const sendMessage = useCallback(async (message: string) => {
     if (!message.trim() || isLoading) return
 
+    // Validar se o usuário está autenticado
+    if (!userId) {
+      setError('Você precisa estar autenticado para enviar mensagens')
+      return
+    }
+
     const userMessage: AgentMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -50,6 +56,8 @@ export function useAgentChat(userId?: string): AgentChatState & AgentChatActions
     setError(null)
     lastMessageRef.current = message
 
+    console.log('📤 Sending message with userId:', userId)
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -59,7 +67,7 @@ export function useAgentChat(userId?: string): AgentChatState & AgentChatActions
         body: JSON.stringify({
           message,
           conversationId,
-          userId: userId || 'anonymous', // Garantir que sempre há um userId
+          userId: userId, // Usar o userId real da sessão
           // Incluir informações do usuário para personalização
           includeUserProfile: true,
           // Forçar o agente a usar tools de consulta de perfil
