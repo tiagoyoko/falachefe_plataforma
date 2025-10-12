@@ -32,11 +32,10 @@ export interface ProcessMessageResult {
  * Serviço de Mensagens - Processa mensagens do WhatsApp
  * 
  * Fluxo:
- * 1. Valida usuário em user_onboarding pelo whatsapp_phone
- * 2. Verifica subscription ativa (user_subscriptions)
- * 3. Busca/cria conversação ativa
- * 4. Salva mensagem no banco
- * 5. Retorna dados completos para processamento
+ * 1. Valida/cria usuário pelo número de telefone
+ * 2. Busca/cria conversação ativa
+ * 3. Salva mensagem no banco
+ * 4. Retorna dados completos para processamento
  */
 export class MessageService {
   
