@@ -74,10 +74,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        user_message: message,
-        user_id: userId,
-        phone_number: '', // Web chat não tem número de telefone
-        context
+        message: message,           // API espera "message"
+        userId: userId,             // API espera "userId"
+        phoneNumber: '+5500000000', // API exige phoneNumber (dummy para web)
+        context: context            // API aceita "context"
       })
     });
 
