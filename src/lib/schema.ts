@@ -12,6 +12,9 @@ import {
 import { relations } from "drizzle-orm";
 import { user } from "./schema-consolidated";
 
+// Re-export user from Better Auth
+export { user };
+
 // Enums
 export const agentTypeEnum = pgEnum('agent_type', ['sales', 'support', 'marketing', 'finance', 'orchestrator']);
 export const conversationStatusEnum = pgEnum('conversation_status', ['active', 'waiting', 'escalated', 'closed', 'archived']);
@@ -152,6 +155,40 @@ export const templatesRelations = relations(templates, ({ one }) => ({
     references: [companies.id],
   }),
 }));
+
+// Export all types
+export type Company = typeof companies.$inferSelect;
+export type NewCompany = typeof companies.$inferInsert;
+export type User = typeof user.$inferSelect;
+export type NewUser = typeof user.$inferInsert;
+export type Agent = typeof agents.$inferSelect;
+export type NewAgent = typeof agents.$inferInsert;
+export type Conversation = typeof conversations.$inferSelect;
+export type NewConversation = typeof conversations.$inferInsert;
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+export type Template = typeof templates.$inferSelect;
+export type NewTemplate = typeof templates.$inferInsert;
+export type UserOnboarding = typeof userOnboarding.$inferSelect;
+export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
+
+// Re-export billing types
+export type {
+  SubscriptionPlan,
+  NewSubscriptionPlan,
+  UserSubscription,
+  NewUserSubscription,
+  Payment,
+  NewPayment,
+  Invoice,
+  NewInvoice,
+  UsageLimit,
+  NewUsageLimit,
+  UsageHistory,
+  NewUsageHistory,
+  StripeWebhook,
+  NewStripeWebhook,
+} from './billing-schema';
 
 // Financial Categories table
 export const financialCategories = pgTable("financial_categories", {
