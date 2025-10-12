@@ -45,7 +45,7 @@ export const companies = pgTable("companies", {
 });
 
 // Users (Usuários finais via WhatsApp)
-export const users = pgTable("whatsapp_users", {
+export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   phoneNumber: varchar("phone_number", { length: 20 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -104,7 +104,7 @@ export const messages = pgTable("messages", {
   readAt: timestamp("read_at"),
 });
 
-// Templates (Templates de mensagem WhatsApp)
+// Templates (Templates de mensagens aprovadas)
 export const templates = pgTable("templates", {
   id: uuid("id").primaryKey().defaultRandom(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
@@ -119,17 +119,78 @@ export const templates = pgTable("templates", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Shared Memories (Memórias compartilhadas entre agentes)
+export const sharedMemories = pgTable("shared_memories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  memoryType: sharedMemoryTypeEnum("memory_type").notNull(),
+  content: jsonb("content").notNull(),
+  accessLevel: accessLevelEnum("access_level").default("public"),
+  tags: text("tags").array().default([]),
+  isActive: boolean("is_active").default(true),
+  createdBy: uuid("created_by"),
+  lastUpdatedBy: uuid("last_updated_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Agent Learnings (Aprendizados de agentes)
+export const agentLearnings = pgTable("agent_learnings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  agentId: uuid("agent_id").references(() => agents.id, { onDelete: "cascade" }).notNull(),
+  learningType: learningTypeEnum("learning_type").notNull(),
+  pattern: jsonb("pattern").notNull(),
+  confidence: integer("confidence").default(50),
+  successRate: integer("success_rate").default(0),
+  usageCount: integer("usage_count").default(0),
+  isValidated: boolean("is_validated").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Admin Users (Usuários administradores da empresa)
+export const adminUsers = pgTable("admin_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: roleEnum("role").default("analyst"),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// User Onboarding (Dados de onboarding dos usuários)
+export const userOnboarding = pgTable("user_onboarding", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 255 }).unique().notNull(),
+  firstName: varchar("first_name", { length: 100 }).notNull(),
+  lastName: varchar("last_name", { length: 100 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  position: varchar("position", { length: 100 }).notNull(),
+  companySize: companySizeEnum("company_size").notNull(),
+  industry: varchar("industry", { length: 100 }).notNull(),
+  whatsappPhone: varchar("whatsapp_phone", { length: 20 }).notNull(),
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const companiesRelations = relations(companies, ({ many }) => ({
   users: many(users),
   agents: many(agents),
   conversations: many(conversations),
   templates: many(templates),
+  sharedMemories: many(sharedMemories),
+  adminUsers: many(adminUsers),
 }));
 
-export const userRelations = relations(user, ({ one, many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, {
-    fields: [user.companyId],
+    fields: [users.companyId],
     references: [companies.id],
   }),
   conversations: many(conversations),
@@ -141,6 +202,7 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
     references: [companies.id],
   }),
   conversations: many(conversations),
+  learnings: many(agentLearnings),
 }));
 
 export const conversationsRelations = relations(conversations, ({ one, many }) => ({
@@ -166,103 +228,16 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
-export const templatesRelations = relations(templates, ({ one }) => ({
+export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
   company: one(companies, {
-    fields: [templates.companyId],
+    fields: [adminUsers.companyId],
     references: [companies.id],
   }),
 }));
 
-// Export all types
-export type Company = typeof companies.$inferSelect;
-export type NewCompany = typeof companies.$inferInsert;
-export type User = typeof user.$inferSelect;
-export type NewUser = typeof user.$inferInsert;
-export type Agent = typeof agents.$inferSelect;
-export type NewAgent = typeof agents.$inferInsert;
-export type Conversation = typeof conversations.$inferSelect;
-export type NewConversation = typeof conversations.$inferInsert;
-export type Message = typeof messages.$inferSelect;
-export type NewMessage = typeof messages.$inferInsert;
-export type Template = typeof templates.$inferSelect;
-export type NewTemplate = typeof templates.$inferInsert;
-export type UserOnboarding = typeof userOnboarding.$inferSelect;
-export type NewUserOnboarding = typeof userOnboarding.$inferInsert;
-
-// Re-export billing types
-export type {
-  SubscriptionPlan,
-  NewSubscriptionPlan,
-  UserSubscription,
-  NewUserSubscription,
-  Payment,
-  NewPayment,
-  Invoice,
-  NewInvoice,
-  UsageLimit,
-  NewUsageLimit,
-  UsageHistory,
-  NewUsageHistory,
-  StripeWebhook,
-  NewStripeWebhook,
-} from './billing-schema';
-
-// Financial Categories table
-export const financialCategories = pgTable("financial_categories", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
-  color: varchar("color", { length: 7 }), // Hex color code
-  isDefault: boolean("is_default").default(false).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  userId: varchar("user_id", { length: 100 }), // NULL for global categories
-  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Financial Data table
-export const financialData = pgTable("financial_data", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  type: varchar("type", { length: 20 }).notNull(),
-  amount: integer("amount").notNull(), // Stored in cents
-  description: text("description").notNull(),
-  category: varchar("category", { length: 50 }).notNull(),
-  date: timestamp("date").notNull(),
-  userId: varchar("user_id", { length: 100 }).notNull(),
-  metadata: jsonb("metadata").default({}).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// User Onboarding table
-export const userOnboarding = pgTable("user_onboarding", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: varchar("user_id", { length: 100 }).unique().notNull(), // Better Auth user ID
-  firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }).notNull(),
-  companyName: varchar("company_name", { length: 255 }).notNull(),
-  position: varchar("position", { length: 255 }).notNull(),
-  companySize: companySizeEnum("company_size").notNull(),
-  industry: varchar("industry", { length: 255 }).notNull(),
-  whatsappPhone: varchar("whatsapp_phone", { length: 20 }).notNull(),
-  isCompleted: boolean("is_completed").default(false).notNull(),
-  completedAt: timestamp("completed_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Relations
-export const financialCategoriesRelations = relations(financialCategories, ({ one }) => ({
-  company: one(companies, {
-    fields: [financialCategories.companyId],
-    references: [companies.id],
-  }),
-}));
-
-export const financialDataRelations = relations(financialData, ({ one }) => ({
-  category: one(financialCategories, {
-    fields: [financialData.category],
-    references: [financialCategories.name],
+export const agentLearningsRelations = relations(agentLearnings, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentLearnings.agentId],
+    references: [agents.id],
   }),
 }));
