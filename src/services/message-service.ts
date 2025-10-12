@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
-import { users, conversations, messages, companies } from '@/lib/schema';
+import { conversations, messages, companies, userOnboarding } from '@/lib/schema';
+import { userSubscriptions } from '@/lib/billing-schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import type { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
 
@@ -31,10 +32,11 @@ export interface ProcessMessageResult {
  * Serviço de Mensagens - Processa mensagens do WhatsApp
  * 
  * Fluxo:
- * 1. Valida/cria usuário pelo número de telefone
- * 2. Busca/cria conversação ativa
- * 3. Salva mensagem no banco
- * 4. Retorna dados completos para processamento
+ * 1. Valida usuário em user_onboarding pelo whatsapp_phone
+ * 2. Verifica subscription ativa (user_subscriptions)
+ * 3. Busca/cria conversação ativa
+ * 4. Salva mensagem no banco
+ * 5. Retorna dados completos para processamento
  */
 export class MessageService {
   
@@ -93,32 +95,55 @@ export class MessageService {
         };
       }
 
-      // 1. Buscar ou criar company (usar company padrão por enquanto)
-      const company = await this.getOrCreateDefaultCompany(owner);
-      
-      console.log('🏢 Company:', {
-        id: company.id,
-        name: company.name
-      });
-
-      // 2. Buscar ou criar usuário WhatsApp
-      const user = await this.getOrCreateWhatsAppUser(
-        message.sender,
-        chat.name || message.senderName || 'Usuário',
-        company.id
+      // 1. Buscar dados do usuário em user_onboarding
+      const phoneDigits = normalizedPhone.replace(/\D/g, '').slice(-9);
+      const onboardingData = await db.execute<{
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        whatsapp_phone: string;
+      }>(
+        sql`SELECT user_id, first_name, last_name, whatsapp_phone
+            FROM user_onboarding
+            WHERE whatsapp_phone LIKE ${'%' + phoneDigits + '%'}
+            LIMIT 1`
       );
 
-      console.log('👤 User:', {
-        id: user.id,
-        name: user.name,
-        phoneNumber: user.phoneNumber,
-        isNew: user.isNewUser
+      if (!onboardingData || onboardingData.length === 0) {
+        throw new Error('Usuário não encontrado em user_onboarding');
+      }
+
+      const userData = onboardingData[0];
+      const userId = userData.user_id;
+      const userName = `${userData.first_name} ${userData.last_name}`.trim();
+
+      console.log('👤 User from onboarding:', {
+        userId,
+        userName,
+        phoneNumber: normalizedPhone
+      });
+
+      // 2. Buscar company_id via subscription
+      const subscriptions = await db.select()
+        .from(userSubscriptions)
+        .where(eq(userSubscriptions.userId, userId))
+        .limit(1);
+
+      if (subscriptions.length === 0) {
+        throw new Error('Subscription não encontrada para usuário');
+      }
+
+      const companyId = subscriptions[0].companyId;
+
+      console.log('🏢 Company from subscription:', {
+        companyId,
+        userId
       });
 
       // 3. Buscar ou criar conversação ativa
       const conversation = await this.getOrCreateActiveConversation(
-        user.id,
-        company.id
+        userId,
+        companyId
       );
 
       console.log('💬 Conversation:', {
@@ -129,7 +154,7 @@ export class MessageService {
       // 4. Salvar mensagem no banco
       const savedMessage = await this.saveMessage({
         conversationId: conversation.id,
-        senderId: user.id,
+        senderId: userId,
         senderType: 'user' as const,
         content: message.text || message.content || '',
         messageType: this.mapMessageType(message.type || message.messageType),
@@ -162,10 +187,10 @@ export class MessageService {
           status: conversation.status || 'active'
         },
         user: {
-          id: user.id,
-          name: user.name,
-          phoneNumber: user.phoneNumber,
-          isNewUser: user.isNewUser || false
+          id: userId,
+          name: userName,
+          phoneNumber: normalizedPhone,
+          isNewUser: false
         }
       };
 
@@ -302,60 +327,10 @@ Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
     }
   }
 
-  /**
-   * Busca ou cria usuário WhatsApp pelo telefone
-   */
-  private static async getOrCreateWhatsAppUser(
-    phoneNumber: string,
-    name: string,
-    companyId: string
-  ) {
-    try {
-      // Normalizar número de telefone (remover @c.us se presente)
-      const normalizedPhone = phoneNumber.replace('@c.us', '');
-
-      // Buscar usuário existente (tabela whatsapp_users exportada como 'users')
-      const existingUsers = await db.select().from(users).where(eq(users.phoneNumber, normalizedPhone)).limit(1);
-      let user = existingUsers[0] || null;
-
-      let isNewUser = false;
-
-      if (!user) {
-        // Criar novo usuário
-        console.log('👤 Creating new WhatsApp user:', normalizedPhone);
-        
-        const [newUser] = await db.insert(users).values({
-          phoneNumber: normalizedPhone,
-          name: name,
-          companyId: companyId,
-          optInStatus: true, // Auto opt-in ao enviar mensagem
-          lastInteraction: new Date(),
-          windowExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
-          preferences: {}
-        }).returning();
-
-        user = newUser;
-        isNewUser = true;
-      } else {
-        // Atualizar última interação e janela
-        await db.update(users)
-          .set({
-            lastInteraction: new Date(),
-            windowExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-            updatedAt: new Date()
-          })
-          .where(eq(users.id, user.id));
-      }
-
-      return {
-        ...user,
-        isNewUser
-      };
-    } catch (error) {
-      console.error('Error in getOrCreateWhatsAppUser:', error);
-      throw error;
-    }
-  }
+  // REMOVIDO: getOrCreateWhatsAppUser()
+  // Agora usamos user_onboarding diretamente
+  // Dados de WhatsApp estão em user_onboarding.whatsapp_phone
+  // user_id é obtido via checkPlatformUserWithoutCompany() ou query direta
 
   /**
    * Busca ou cria conversação ativa para o usuário
