@@ -2,6 +2,12 @@
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
+    },
+    "src/app/api/chat/route.ts": {
+      "maxDuration": 120
+    },
+    "src/app/api/webhook/uaz/route.ts": {
+      "maxDuration": 120
     }
   },
   "headers": [
