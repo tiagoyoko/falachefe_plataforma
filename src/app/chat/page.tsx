@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { UserProfile } from "@/components/auth/user-profile";
 import { useSession } from "@/lib/auth/auth-client";
-import { useState, type ReactNode, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { Send, Plus, MessageSquare, Bot, User, Copy, Check, RefreshCw, AlertCircle } from "lucide-react";
@@ -155,7 +155,7 @@ export default function ChatPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || isLoading) return;
+    if (!text || isLoading || !session?.user?.id) return;
     
     sendMessage(text);
     setInput("");
@@ -364,14 +364,19 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 resize-none border-0 outline-none bg-transparent placeholder:text-muted-foreground min-h-[24px] max-h-[200px]"
+                placeholder={
+                  !session?.user?.id 
+                    ? "Aguarde, carregando sessão..." 
+                    : "Digite sua mensagem..."
+                }
+                disabled={!session?.user?.id}
+                className="flex-1 resize-none border-0 outline-none bg-transparent placeholder:text-muted-foreground min-h-[24px] max-h-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={1}
               />
               <Button
                 type="submit"
                 size="sm"
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isLoading || !session?.user?.id}
                 className="rounded-xl"
               >
                 <Send className="h-4 w-4" />
