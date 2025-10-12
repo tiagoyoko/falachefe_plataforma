@@ -53,7 +53,7 @@ export async function GET(req: Request) {
       dbConnected = true;
       try {
         // Touch a known table to verify migrations
-        await db.select().from(schema.users).limit(1);
+        await db.select().from(schema.companies).limit(1);
         schemaApplied = true;
       } catch {
         schemaApplied = false;
