@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { User, Mail, Calendar, Shield, Edit, Save, X } from "lucide-react";
 
@@ -154,17 +153,63 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!editingSection) return;
+    
     setIsSaving(true);
     try {
-      // Aqui você faria a chamada para a API para salvar os dados
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simula delay da API
+      // Preparar dados baseado na seção editada
+      const sectionData = userData[editingSection as keyof typeof userData];
+      
+      // Chamar API para salvar no banco de dados
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          section: editingSection,
+          fields: sectionData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao salvar");
+      }
+
+      console.log("✅ Perfil salvo:", result);
       
       setEditingSection(null);
       setIsEditing(false);
-      // Aqui você poderia mostrar uma notificação de sucesso
+      
+      // Recarregar dados do servidor para garantir sincronização
+      const onboardingRes = await fetch("/api/onboarding");
+      if (onboardingRes.ok) {
+        const onboarding = await onboardingRes.json();
+        setOnboardingData(onboarding.data);
+        
+        // Atualizar estado local com dados do servidor
+        setUserData(prev => ({
+          ...prev,
+          personalInfo: {
+            ...prev.personalInfo,
+            name: `${onboarding.data.firstName} ${onboarding.data.lastName}`,
+            phone: onboarding.data.whatsappPhone,
+            position: onboarding.data.position,
+          },
+          companyInfo: {
+            ...prev.companyInfo,
+            name: onboarding.data.companyName,
+            industry: onboarding.data.industry,
+            size: onboarding.data.companySize,
+          }
+        }));
+      }
+      
     } catch (error) {
-      console.error("Erro ao salvar:", error);
-      // Aqui você poderia mostrar uma notificação de erro
+      console.error("❌ Erro ao salvar:", error);
+      alert(`Erro ao salvar: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     } finally {
       setIsSaving(false);
     }
