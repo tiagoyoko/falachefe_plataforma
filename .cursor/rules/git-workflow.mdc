@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+description: Workflow de Git usando GitHub MCP para commits e push
+---
+
+# Git Workflow - Uso de GitHub MCP
+
+## Sempre Use GitHub MCP para Operações Git
+
+Quando precisar fazer commit e push de código:
+
+### ✅ CORRETO - Usar GitHub MCP:
+
+```typescript
+// Após fazer mudanças nos arquivos, usar:
+await mcp_github_create_or_update_file({
+  owner: "tiagoyoko",
+  repo: "falachefe_plataforma", 
+  branch: "master",
+  path: "caminho/do/arquivo.ts",
+  content: "conteúdo do arquivo",
+  message: "feat: descrição clara da mudança"
+});
+```
+
+### ❌ EVITAR - Git via Terminal:
+
+```bash
+# NÃO usar diretamente, a menos que GitHub MCP falhe:
+git add .
+git commit -m "mensagem"
+git push origin master
+```
+
+## Repositório do Projeto
+
+- **Owner**: `tiagoyoko`
+- **Repo**: `falachefe_plataforma`
+- **Branch Principal**: `master`
+- **Auto-deploy**: Vercel detecta push automaticamente
+
+## Mensagens de Commit
+
+Use **Conventional Commits**:
+
+- `feat:` - Nova funcionalidade
+- `fix:` - Correção de bug
+- `docs:` - Documentação
+- `refactor:` - Refatoração de código
+- `test:` - Testes
+- `chore:` - Manutenção
+
+### Exemplo de Boa Mensagem:
+
+```
+feat: implementar chat web integrado com CrewAI
+
+- Criar endpoint /api/chat para interface web
+- Configurar integração com servidor Hetzner
+- Adicionar validações de usuário
+- Documentar arquitetura completa
+
+Closes #123
+```
+
+## Fluxo Completo
+
+1. Fazer mudanças nos arquivos
+2. Verificar lint: `npm run lint`  
+3. Testar build: `npm run build`
+4. Usar `mcp_github_create_or_update_file` para push
+5. Verificar deploy com Vercel MCP
