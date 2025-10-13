@@ -3,7 +3,7 @@ Ferramentas para consulta e edição de perfil do usuário
 Permite que agentes acessem e modifiquem dados do usuário e empresa
 """
 
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool
 from typing import Type, Optional, Dict, Any
 from pydantic import BaseModel, Field
 import os
