@@ -34,16 +34,31 @@ QSTASH_NEXT_SIGNING_KEY = os.getenv("QSTASH_NEXT_SIGNING_KEY", "")
 
 # Cache do crew (inicializar apenas uma vez)
 crew_instance = None
+_crew_initialization_attempted = False
 
 
 def get_crew():
     """Retorna instância singleton do crew"""
-    global crew_instance
-    if crew_instance is None:
+    global crew_instance, _crew_initialization_attempted
+    
+    if crew_instance is None and not _crew_initialization_attempted:
+        _crew_initialization_attempted = True
         print("🚀 Initializing FalachefeCrew...", file=sys.stderr)
-        crew_instance = FalachefeCrew()
-        print("✅ FalachefeCrew initialized", file=sys.stderr)
+        try:
+            crew_instance = FalachefeCrew()
+            print("✅ FalachefeCrew initialized successfully!", file=sys.stderr)
+        except Exception as e:
+            print(f"❌ Failed to initialize CrewAI: {e}", file=sys.stderr)
+            print(f"⚠️  Server will continue but requests may fail", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+    
     return crew_instance
+
+
+# ✨ NOVO: Pré-inicializar CrewAI quando módulo for importado (para Gunicorn)
+print("📦 Module api_server loaded, pre-initializing CrewAI...", file=sys.stderr)
+get_crew()  # Chama inicialização ao carregar módulo
 
 
 def get_user_company_data(user_id: str) -> dict:
