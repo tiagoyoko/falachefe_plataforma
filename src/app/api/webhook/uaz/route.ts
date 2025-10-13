@@ -418,7 +418,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         }
 
         // Preparar processamento
-        const baseWorkerUrl = process.env.RAILWAY_WORKER_URL || process.env.CREWAI_API_URL;
+        const baseWorkerUrl = process.env.CREWAI_API_URL || 'http://37.27.248.13:8000';
         const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
         const payload = MessageRouter.preparePayload(
           processedMessage,
