@@ -56,11 +56,20 @@ export class MessageService {
       console.log('📨 MessageService: Processing incoming message', {
         messageId: message.id,
         sender: message.sender,
+        senderPn: message.sender_pn,
+        chatPhone: chat.phone,
         chatName: chat.name
       });
 
       // Normalizar número de telefone
-      const normalizedPhone = message.sender.replace('@c.us', '');
+      // Usar sender_pn (phone number) ao invés de sender (LID)
+      // sender_pn vem como: 5511947525207@s.whatsapp.net
+      // Fallback para chat.phone se sender_pn não existir
+      const phoneSource = message.sender_pn || chat.wa_chatid || chat.phone;
+      const normalizedPhone = phoneSource
+        .replace('@s.whatsapp.net', '')
+        .replace('@c.us', '')
+        .replace(/\D/g, ''); // Remove tudo que não é dígito
 
       // ✨ NOVO: Verificar se usuário já existe na plataforma
       const platformUserCheck = await this.checkPlatformUserWithoutCompany(normalizedPhone);
@@ -95,7 +104,14 @@ export class MessageService {
       }
 
       // 1. Buscar dados do usuário em user_onboarding
-      const phoneDigits = normalizedPhone.replace(/\D/g, '').slice(-9);
+      // normalizedPhone já vem apenas com dígitos (ex: 5511947525207)
+      // Tentar buscar por:
+      // 1. Número completo (5511947525207)
+      // 2. Últimos 11 dígitos (11947525207 - DDD + número BR)
+      // 3. Últimos 9 dígitos (947525207 - apenas número)
+      const phoneDigits = normalizedPhone.slice(-11); // DDD + número (formato BR)
+      const phoneDigits9 = normalizedPhone.slice(-9);  // Apenas número
+      
       const onboardingData = await db.execute<{
         user_id: string;
         first_name: string;
@@ -104,11 +120,20 @@ export class MessageService {
       }>(
         sql`SELECT user_id, first_name, last_name, whatsapp_phone
             FROM user_onboarding
-            WHERE whatsapp_phone LIKE ${'%' + phoneDigits + '%'}
+            WHERE whatsapp_phone = ${normalizedPhone}
+               OR whatsapp_phone = ${phoneDigits}
+               OR whatsapp_phone LIKE ${'%' + phoneDigits9}
             LIMIT 1`
       );
 
       if (!onboardingData || onboardingData.length === 0) {
+        console.error('❌ Usuário não encontrado em user_onboarding', {
+          normalizedPhone,
+          phoneDigits,
+          phoneDigits9,
+          originalSender: message.sender,
+          senderPn: message.sender_pn
+        });
         throw new Error('Usuário não encontrado em user_onboarding');
       }
 
@@ -212,8 +237,10 @@ export class MessageService {
     userName?: string;
   }> {
     try {
-      // Buscar últimos 9 dígitos do telefone (formato padrão BR)
-      const phoneDigits = phoneNumber.replace(/\D/g, '').slice(-9);
+      // phoneNumber já vem apenas com dígitos (ex: 5511947525207)
+      // Tentar buscar por diferentes formatos
+      const phoneDigits = phoneNumber.slice(-11); // DDD + número
+      const phoneDigits9 = phoneNumber.slice(-9);  // Apenas número
       
       // Buscar na tabela user_onboarding (usuários que fizeram cadastro na plataforma)
       const platformUsers = await db.execute<{
@@ -225,7 +252,9 @@ export class MessageService {
       }>(
         sql`SELECT user_id, first_name, last_name, whatsapp_phone, is_completed
             FROM user_onboarding
-            WHERE whatsapp_phone LIKE ${'%' + phoneDigits + '%'}
+            WHERE whatsapp_phone = ${phoneNumber}
+               OR whatsapp_phone = ${phoneDigits}
+               OR whatsapp_phone LIKE ${'%' + phoneDigits9}
             LIMIT 1`
       );
 

@@ -155,6 +155,14 @@ export class MessageRouter {
     userId: string,
     conversationId: string
   ): Record<string, any> {
+    console.log('🔧 preparePayload called with:', {
+      userId,
+      conversationId,
+      userIdType: typeof userId,
+      userIdValue: userId,
+      sender: message.sender
+    });
+    
     const basePayload = {
       message: classification.textContent || message.text || message.content || '',
       userId,
@@ -169,6 +177,8 @@ export class MessageRouter {
         priority: classification.priority
       }
     };
+    
+    console.log('📦 basePayload created:', JSON.stringify(basePayload, null, 2));
 
     // Adicionar campos específicos por tipo
     switch (classification.destination) {
