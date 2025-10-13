@@ -3,7 +3,7 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent, UAZReceiptEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
-import { createQStashClient } from '@/lib/queue/qstash-client';
+import { createRedisQueue } from '@/lib/queue/redis-queue';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { UpstashRedisClient as RedisClient } from '@/lib/cache/upstash-redis-client';
 import { MessageRouter, MessageDestination } from '@/lib/message-router';
@@ -430,15 +430,11 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
 
         // Processar mensagem
         try {
-          console.log('📬 Enqueuing message to QStash for async processing...');
+          console.log('📬 Enqueuing message to Redis Queue for async processing...');
           
-          // Inicializar QStash client
-          const qstash = createQStashClient();
-          
-          if (!qstash) {
-            console.warn('⚠️ QStash not configured, falling back to direct call');
-            throw new Error('QStash not configured');
-          }
+          // Obter Redis client
+          const redis = await initializeRedisClient();
+          const redisQueue = createRedisQueue(redis);
 
           if (!baseWorkerUrl) {
             console.error('❌ Worker URL not configured');
@@ -448,7 +444,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
 
           // Enfileirar mensagem para processamento assíncrono
-          const queueResult = await qstash.publishMessage(
+          const queueResult = await redisQueue.enqueue(
             targetEndpoint,
             {
               message: payload.message || '',
@@ -464,7 +460,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
 
           if (queueResult.success) {
             console.log('✅ Message queued successfully:', {
-              messageId: queueResult.messageId,
+              jobId: queueResult.jobId,
               destination: targetEndpoint,
               contentType: routing.classification.contentType,
               userId: result.user.id
@@ -475,9 +471,9 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           }
           
         } catch (error) {
-          console.error('❌ Error queueing message to QStash:', error);
+          console.error('❌ Error queueing message to Redis:', error);
           
-          // Fallback: tentar processar diretamente (se QStash falhar)
+          // Fallback: tentar processar diretamente (se Redis falhar)
           console.log('🔄 Trying direct processing as fallback...');
           
           try {

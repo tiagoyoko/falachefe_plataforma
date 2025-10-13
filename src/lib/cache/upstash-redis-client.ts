@@ -351,6 +351,67 @@ export class UpstashRedisClient {
   }
 
   /**
+   * Lista: Adicionar elemento no início (esquerda)
+   */
+  async lpush(key: string, value: string): Promise<number> {
+    try {
+      if (!this.isConfigured() || !this.redis) {
+        return 0;
+      }
+      return await this.redis.lpush(key, value);
+    } catch (error) {
+      console.error('Redis LPUSH error:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Lista: Adicionar elemento no final (direita)
+   */
+  async rpush(key: string, value: string): Promise<number> {
+    try {
+      if (!this.isConfigured() || !this.redis) {
+        return 0;
+      }
+      return await this.redis.rpush(key, value);
+    } catch (error) {
+      console.error('Redis RPUSH error:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Lista: Remover e retornar elemento do final (direita)
+   */
+  async rpop(key: string): Promise<string | null> {
+    try {
+      if (!this.isConfigured() || !this.redis) {
+        return null;
+      }
+      const value = await this.redis.rpop<string>(key);
+      return value || null;
+    } catch (error) {
+      console.error('Redis RPOP error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Lista: Obter tamanho da lista
+   */
+  async llen(key: string): Promise<number> {
+    try {
+      if (!this.isConfigured() || !this.redis) {
+        return 0;
+      }
+      return await this.redis.llen(key);
+    } catch (error) {
+      console.error('Redis LLEN error:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Publicar mensagem em canal (compatibilidade)
    * Nota: Upstash Redis não suporta pub/sub via REST API
    */
