@@ -420,14 +420,6 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         const baseWorkerUrl = (process.env.CREWAI_API_URL || 'http://37.27.248.13:8000').trim();
         const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
         
-        // DEBUG: Verificar dados antes de preparar payload
-        console.log('🔍 Pre-payload data:', {
-          userId: result.user.id,
-          conversationId: result.conversation.id,
-          userIdType: typeof result.user.id,
-          userIdEmpty: !result.user.id
-        });
-        
         const payload = MessageRouter.preparePayload(
           processedMessage,
           chat,
@@ -445,9 +437,6 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         }
 
         console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
-        
-        // DEBUG: Log payload completo
-        console.log('📦 Payload:', JSON.stringify(payload, null, 2));
 
         // Processar de forma assíncrona sem bloquear webhook
         // Promise não aguardada (fire-and-forget)

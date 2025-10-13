@@ -15,6 +15,13 @@ services:
       - UAZAPI_ADMIN_TOKEN=${UAZAPI_ADMIN_TOKEN}
       
       # Database
+      
+      # Supabase
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - FALACHEFE_API_URL=${FALACHEFE_API_URL:-https://falachefe.app.br}
+      - CREWAI_SERVICE_TOKEN=${CREWAI_SERVICE_TOKEN}
       - DATABASE_URL=${DATABASE_URL:-}
       
       # Redis
