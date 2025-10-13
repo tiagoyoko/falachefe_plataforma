@@ -765,8 +765,19 @@ Contato: {user_company_data['user_name']} ({user_company_data['user_role']})"""
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8000))
     app.start_time = time()  # Registrar tempo de início
+    
     print(f"🚀 Starting Falachefe CrewAI API on port {port}", file=sys.stderr)
     print(f"📡 UAZAPI: {UAZAPI_BASE_URL}", file=sys.stderr)
     print(f"🔑 Token: {'✅ Configured' if UAZAPI_TOKEN else '❌ NOT SET'}", file=sys.stderr)
+    
+    # ✨ NOVO: Pré-inicializar CrewAI antes de aceitar requisições
+    print("⚙️  Pre-initializing CrewAI (this may take a minute)...", file=sys.stderr)
+    try:
+        crew = get_crew()
+        print(f"✅ CrewAI initialized successfully! Ready to process requests.", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ Failed to initialize CrewAI: {e}", file=sys.stderr)
+        print("⚠️  Server will start but requests may fail until CrewAI is ready", file=sys.stderr)
+    
     app.run(host='0.0.0.0', port=port, debug=False)
 
