@@ -22,6 +22,15 @@ from .tools.uazapi_tools import (
     FormatResponseTool,
 )
 
+# Importar ferramentas de perfil do usuário
+from .tools.user_profile_tools import (
+    GetUserProfileTool,
+    GetCompanyDataTool,
+    UpdateUserPreferencesTool,
+    UpdateUserProfileTool,
+    UpdateCompanyDataTool,
+)
+
 # Importar storage customizado do Supabase
 from .storage.supabase_storage import SupabaseVectorStorage
 
@@ -109,6 +118,38 @@ class FalachefeCrew():
             verbose=True,
             memory=True,  # Habilita memória individual do agente
             max_iter=15,
+            allow_delegation=False,
+        )
+    
+    # ============================================
+    # AGENTE DE RECEPÇÃO E TRIAGEM
+    # ============================================
+    
+    @agent
+    def reception_agent(self) -> Agent:
+        """
+        Ana - Agente de Recepção e Primeiro Contato
+        Responsável por acolhimento, personalização e triagem de solicitações
+        
+        Ferramentas disponíveis:
+        - Consultar perfil completo do usuário
+        - Consultar dados da empresa
+        - Atualizar preferências do usuário
+        - Atualizar perfil do usuário
+        - Atualizar dados da empresa
+        """
+        return Agent(
+            config=self.agents_config['reception_agent'], # type: ignore[index]
+            verbose=True,
+            memory=True,  # Habilita memória individual do agente
+            tools=[
+                GetUserProfileTool(),
+                GetCompanyDataTool(),
+                UpdateUserPreferencesTool(),
+                UpdateUserProfileTool(),
+                UpdateCompanyDataTool(),
+            ],
+            max_iter=8,  # Menos iterações (é rápida e direta)
             allow_delegation=False,
         )
     
@@ -208,6 +249,22 @@ class FalachefeCrew():
         """Task: Orientação sobre RH"""
         return Task(
             config=self.tasks_config['hr_guidance'], # type: ignore[index]
+        )
+    
+    # ============================================
+    # TASK - RECEPÇÃO E TRIAGEM
+    # ============================================
+    
+    @task
+    def reception_and_triage(self) -> Task:
+        """
+        Task: Acolhimento personalizado e triagem de solicitação
+        
+        Ana consulta perfil do usuário, personaliza acolhimento e identifica
+        qual especialista deve assumir a conversa (se necessário)
+        """
+        return Task(
+            config=self.tasks_config['reception_and_triage'], # type: ignore[index]
         )
     
     # ============================================

@@ -586,31 +586,59 @@ def process_message():
         classification = classify_message_with_llm(user_message)
         print(f"🔍 Classification: {classification['type']} → {classification['specialist']} (confidence: {classification.get('confidence', 0)})", file=sys.stderr)
         
-        # Se não precisa especialista (saudação/agradecimento), responder direto
-        if not classification['needs_specialist']:
-            response_text = classification['response']
+        # Buscar dados REAIS do usuário e empresa para TODOS os casos
+        print(f"📊 Fetching real user and company data for {user_id}...", file=sys.stderr)
+        user_company_data = get_user_company_data(user_id)
+        financial_status = get_financial_status(user_id)
+        
+        print(f"✅ Company: {user_company_data['company_name']} | Sector: {user_company_data['company_sector']}", file=sys.stderr)
+        
+        # Obter crew
+        crew_class = get_crew()
+        
+        # Montar contexto da empresa com dados reais
+        company_context = f"""Empresa: {user_company_data['company_name']}
+Setor: {user_company_data['company_sector']}
+Porte: {user_company_data['company_size']}
+Contato: {user_company_data['user_name']} ({user_company_data['user_role']})"""
+        
+        # Verificar se precisa de recepção/triagem (saudação, agradecimento, geral)
+        needs_reception = classification['type'] in ['greeting', 'acknowledgment', 'general', 'continuation']
+        
+        if needs_reception:
+            # Usar Ana (reception_agent) para acolhimento personalizado
+            print(f"👋 Using reception_agent (Ana) for {classification['type']}", file=sys.stderr)
+            
+            agent = crew_class.reception_agent()
+            task = crew_class.reception_and_triage()
+            
+            # Preparar inputs com contexto completo
+            reception_inputs = {
+                "user_id": user_id,
+                "user_message": user_message,
+                "user_context": user_company_data['user_name'],
+                "message": user_message,
+                "phone_number": phone_number,
+                "whatsapp_number": phone_number,
+            }
+            
+            # Crew simples: Ana sozinha
+            simple_crew = Crew(
+                agents=[agent],
+                tasks=[task],
+                process=Process.sequential,
+                verbose=True
+            )
+            result = simple_crew.kickoff(inputs=reception_inputs)
             processing_time = int((time() - start_time) * 1000)
-            print(f"✅ Direct response (no CrewAI) in {processing_time}ms", file=sys.stderr)
+            print(f"✅ Ana (reception) completed in {processing_time}ms", file=sys.stderr)
+            
+            # Extrair resposta
+            response_text = str(result)
         else:
             # Mensagem precisa de especialista → usar CrewAI
             specialist_type = classification['specialist']
             print(f"🤖 Routing to {specialist_type}...", file=sys.stderr)
-            
-            # Buscar dados REAIS do usuário e empresa
-            print(f"📊 Fetching real user and company data for {user_id}...", file=sys.stderr)
-            user_company_data = get_user_company_data(user_id)
-            financial_status = get_financial_status(user_id)
-            
-            print(f"✅ Company: {user_company_data['company_name']} | Sector: {user_company_data['company_sector']}", file=sys.stderr)
-            
-            # Obter crew
-            crew_class = get_crew()
-            
-            # Montar contexto da empresa com dados reais
-            company_context = f"""Empresa: {user_company_data['company_name']}
-Setor: {user_company_data['company_sector']}
-Porte: {user_company_data['company_size']}
-Contato: {user_company_data['user_name']} ({user_company_data['user_role']})"""
             
             # Preparar inputs base (todas as variáveis possíveis que as tasks podem usar)
             base_inputs = {

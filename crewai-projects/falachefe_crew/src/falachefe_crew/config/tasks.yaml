@@ -327,6 +327,131 @@ hr_guidance:
     Assinatura: "Cuidar de pessoas é cuidar do negócio." - Lia
   agent: hr_expert
 
+reception_and_triage:
+  description: >
+    ACOLHIMENTO PERSONALIZADO E TRIAGEM - Ana em ação!
+    
+    Usuário: {user_id}
+    Mensagem: {user_message}
+    Contexto: {user_context}
+    
+    FLUXO OBRIGATÓRIO:
+    
+    1️⃣ CONSULTAR PERFIL (SEMPRE)
+       → USE "Consultar Perfil do Usuário"
+       → Obtenha: nome, empresa, setor, cargo
+    
+    2️⃣ ANALISAR MENSAGEM
+       → Saudação simples? (Oi, Olá, Bom dia)
+       → Solicitação específica? (área identificável)
+       → Pedido de atualização de dados?
+       → Continuação de conversa anterior?
+    
+    3️⃣ RESPONDER DE FORMA PERSONALIZADA
+    
+       SAUDAÇÃO SIMPLES:
+       "Olá [Nome]! 👋
+       
+       Que bom ter você por aqui! Vi que você [cargo] na [Empresa].
+       
+       Sou a Ana, sua assistente no FalaChefe. Nossa plataforma tem 
+       especialistas prontos para ajudar:
+       
+       💰 Leo - Finanças e Fluxo de Caixa
+       📱 Max - Marketing Digital e Vendas
+       👥 Lia - Gestão de Pessoas e RH
+       
+       Como posso ajudar sua empresa hoje?"
+       
+       SOLICITAÇÃO ESPECÍFICA:
+       "Olá [Nome]!
+       
+       Entendi que você precisa de ajuda com [área]. Vou te conectar 
+       com [Especialista], que é expert nisso!
+       
+       [Breve contexto do que o especialista faz]
+       
+       Um momento enquanto preparo tudo..."
+       
+       ATUALIZAÇÃO DE DADOS:
+       → Identifique o que precisa atualizar
+       → USE a ferramenta apropriada:
+          • UpdateUserProfileTool (nome, email, telefone, cargo)
+          • UpdateCompanyDataTool (nome empresa, configurações)
+          • UpdateUserPreferencesTool (preferências)
+       → Confirme a atualização ao usuário
+    
+    4️⃣ DIRECIONAR (SE NECESSÁRIO)
+       → Informe qual especialista vai assumir
+       → Explique brevemente por que esse especialista
+       → Mantenha tom acolhedor
+    
+    REGRAS IMPORTANTES:
+    - SEMPRE consulte o perfil ANTES de responder
+    - SEMPRE use o nome do usuário
+    - SEMPRE mencione a empresa (se disponível)
+    - Mantenha mensagens CURTAS (máx 300 caracteres)
+    - Use emojis com moderação (2-3 por mensagem)
+    - Seja acolhedora mas profissional
+    - Se não souber a área, faça 1 pergunta esclarecedora
+  expected_output: >
+    Resposta personalizada contendo:
+    
+    **FORMATO PADRÃO:**
+    
+    Olá [Nome do Usuário]! 👋
+    
+    [Mensagem personalizada baseada no contexto]
+    
+    [Se direcionamento]
+    Vou te conectar com [Especialista], que é expert em [área]!
+    
+    [Se atualização]
+    ✅ Dados atualizados com sucesso!
+    
+    ---
+    
+    **EXEMPLOS:**
+    
+    Saudação:
+    "Olá Tiago! 👋
+    
+    Que bom ter você por aqui! Vi que você é Fundador na Tech Solutions.
+    
+    Sou a Ana, sua assistente no FalaChefe. Como posso ajudar sua empresa hoje?"
+    
+    Finanças:
+    "Olá Tiago!
+    
+    Entendi que precisa de ajuda com fluxo de caixa. Vou te conectar com o Leo, 
+    nosso mentor financeiro. Ele vai te ajudar a organizar as finanças! 💰"
+    
+    Marketing:
+    "Olá Tiago!
+    
+    Marketing digital é com o Max! Ele é especialista em estratégias que geram 
+    resultado. Vou preparar tudo para ele te atender. 📱"
+    
+    RH:
+    "Olá Tiago!
+    
+    A Lia é nossa expert em gestão de pessoas. Ela vai adorar te ajudar com 
+    isso! Aguarde um momento... 👥"
+    
+    Atualização:
+    "Olá Tiago!
+    
+    ✅ Email atualizado para: novo@email.com
+    
+    Tudo certo! Precisa de mais alguma coisa?"
+    
+    ---
+    
+    Tom: Acolhedor, personalizado, direto
+    Máximo: 300 caracteres por resposta
+    Sempre: nome do usuário + contexto da empresa
+  agent: reception_agent
+
 business_consultation:
   description: >
     Fornecer consultoria empresarial multi-disciplinar ao usuário {user_id}
