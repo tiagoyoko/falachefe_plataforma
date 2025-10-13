@@ -124,6 +124,23 @@ export const agentLearningsRelations = relations(agentLearnings, ({ one }) => ({
   }),
 }));
 
+// Memory Embeddings (para busca vetorial com pgvector)
+export const memoryEmbeddings = pgTable("memory_embeddings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  memoryId: uuid("memory_id").references(() => agentMemories.id, { onDelete: "cascade" }).notNull(),
+  embedding: text("embedding").notNull(), // Vector será convertido para array pelo Supabase
+  contentText: text("content_text").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Relations para memory embeddings
+export const memoryEmbeddingsRelations = relations(memoryEmbeddings, ({ one }) => ({
+  memory: one(agentMemories, {
+    fields: [memoryEmbeddings.memoryId],
+    references: [agentMemories.id],
+  }),
+}));
+
 // Export types
 export type AgentMemory = typeof agentMemories.$inferSelect;
 export type NewAgentMemory = typeof agentMemories.$inferInsert;
@@ -133,3 +150,5 @@ export type ConversationContext = typeof conversationContexts.$inferSelect;
 export type NewConversationContext = typeof conversationContexts.$inferInsert;
 export type AgentLearning = typeof agentLearnings.$inferSelect;
 export type NewAgentLearning = typeof agentLearnings.$inferInsert;
+export type MemoryEmbedding = typeof memoryEmbeddings.$inferSelect;
+export type NewMemoryEmbedding = typeof memoryEmbeddings.$inferInsert;

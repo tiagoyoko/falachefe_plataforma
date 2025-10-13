@@ -365,44 +365,8 @@ business_consultation:
   agent: financial_expert
 
 # ============================================
-# TASKS - ORQUESTRAÇÃO E SUPORTE
+# TASK - SUPORTE
 # ============================================
-
-orchestrate_request:
-  description: >
-    Analisar a demanda do usuário e determinar qual especialista deve atendê-la.
-    
-    Demanda do usuário: {user_request}
-    Contexto do usuário: {user_context}
-    Número do WhatsApp: {whatsapp_number}
-    
-    Você deve:
-    1. Analisar cuidadosamente a demanda do usuário
-    2. Identificar qual área de expertise é mais adequada:
-       - Financeiro: fluxo de caixa, custos, precificação, análise financeira
-       - Marketing: estratégias digitais, redes sociais, campanhas, branding
-       - Vendas: processos comerciais, prospecção, fechamento, CRM
-       - RH: contratação, legislação trabalhista, gestão de pessoas, folha
-    3. Determinar se a demanda requer apenas um especialista ou consultoria integrada
-    4. Preparar o contexto adequado para o especialista escolhido
-    
-    IMPORTANTE: 
-    - Se a demanda for simples e objetiva, direcione para UM especialista
-    - Se a demanda envolver múltiplas áreas, indique "consultoria_integrada"
-    - Se não for claro qual especialista, faça perguntas de esclarecimento
-  expected_output: >
-    Uma decisão estruturada em formato JSON contendo:
-    
-    {
-      "specialist": "financial_expert|marketing_expert|sales_expert|hr_expert|consultoria_integrada|needs_clarification",
-      "confidence": "high|medium|low",
-      "reasoning": "Explicação da escolha do especialista",
-      "context_for_specialist": "Resumo organizado da demanda para o especialista",
-      "clarification_questions": ["pergunta1", "pergunta2"] (se needs_clarification)
-    }
-    
-    Formato: JSON válido, sempre em português brasileiro
-  agent: orchestrator
 
 format_and_send_response:
   description: >

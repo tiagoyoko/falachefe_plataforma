@@ -1,0 +1,23 @@
+{
+  "EventType": "messages",
+  "owner": "5511994066248",
+  "token": "test-token",
+  "message": {
+    "id": "test-msg-" + Date.now(),
+    "sender": "5511994066248@s.whatsapp.net",
+    "senderName": "Tiago Teste",
+    "timestamp": Date.now(),
+    "text": "Olá! Teste do webhook após correção.",
+    "content": "Olá! Teste do webhook após correção.",
+    "messageType": "conversation",
+    "fromMe": false,
+    "isGroup": false
+  },
+  "chat": {
+    "id": "5511994066248@s.whatsapp.net",
+    "name": "Tiago Teste"
+  }
+}
+
+
+

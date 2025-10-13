@@ -1,6 +1,7 @@
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
+from crewai.memory import LongTermMemory
 from typing import List
 
 # Importar ferramentas customizadas de fluxo de caixa
@@ -20,6 +21,9 @@ from .tools.uazapi_tools import (
     UpdateLeadInfoTool,
     FormatResponseTool,
 )
+
+# Importar storage customizado do Supabase
+from .storage.supabase_storage import SupabaseVectorStorage
 
 # Para executar código antes ou depois do crew iniciar, você pode usar os decorators
 # @before_kickoff e @after_kickoff
@@ -63,6 +67,7 @@ class FalachefeCrew():
         return Agent(
             config=self.agents_config['financial_expert'], # type: ignore[index]
             verbose=True,
+            memory=True,  # Habilita memória individual do agente
             tools=[
                 GetCashflowBalanceTool(),
                 GetCashflowCategoriesTool(),
@@ -88,6 +93,7 @@ class FalachefeCrew():
         return Agent(
             config=self.agents_config['marketing_sales_expert'], # type: ignore[index]
             verbose=True,
+            memory=True,  # Habilita memória individual do agente
             max_iter=15,
             allow_delegation=False,
         )
@@ -101,32 +107,14 @@ class FalachefeCrew():
         return Agent(
             config=self.agents_config['hr_expert'], # type: ignore[index]
             verbose=True,
+            memory=True,  # Habilita memória individual do agente
             max_iter=15,
             allow_delegation=False,
         )
     
     # ============================================
-    # AGENTES DE ORQUESTRAÇÃO E SUPORTE
+    # AGENTE DE SUPORTE
     # ============================================
-    
-    @agent
-    def orchestrator(self) -> Agent:
-        """
-        Agente Orquestrador
-        Responsável por receber demandas e direcionar aos especialistas
-        
-        Função principal:
-        - Analisar requisições dos usuários
-        - Identificar qual especialista é mais adequado
-        - Coordenar consultorias multi-disciplinares
-        - Gerenciar o fluxo de trabalho entre especialistas
-        """
-        return Agent(
-            config=self.agents_config['orchestrator'], # type: ignore[index]
-            verbose=True,
-            allow_delegation=True,  # IMPORTANTE: permite delegar para especialistas
-            max_iter=10,
-        )
     
     @agent
     def support_agent(self) -> Agent:
@@ -145,6 +133,7 @@ class FalachefeCrew():
         return Agent(
             config=self.agents_config['support_agent'], # type: ignore[index]
             verbose=True,
+            memory=True,  # Habilita memória individual do agente
             tools=[
                 SendTextMessageTool(),
                 SendMenuMessageTool(),
@@ -234,15 +223,8 @@ class FalachefeCrew():
         )
     
     # ============================================
-    # TASKS - ORQUESTRAÇÃO E SUPORTE
+    # TASK - SUPORTE
     # ============================================
-    
-    @task
-    def orchestrate_request(self) -> Task:
-        """Task: Orquestrar demanda do usuário para especialista correto"""
-        return Task(
-            config=self.tasks_config['orchestrate_request'], # type: ignore[index]
-        )
     
     @task
     def format_and_send_response(self) -> Task:
@@ -254,55 +236,26 @@ class FalachefeCrew():
     @crew
     def crew(self) -> Crew:
         """
-        Cria o Falachefe Crew - Modo Sequencial (tasks específicas)
+        Cria o Falachefe Crew - Modo Sequencial
         
-        Use este crew quando souber exatamente quais tasks executar.
-        Para orquestração automática, use orchestrated_crew()
+        Plataforma multi-agente de consultoria para PMEs brasileiras.
+        
+        Arquitetura:
+        - Processo SEQUENCIAL com tasks específicas
+        - Classificador decide qual agente deve responder (externo ao crew)
+        - Especialistas focados em suas áreas (Finanças, Marketing/Vendas, RH)
+        - Agente de suporte formata e envia respostas via WhatsApp
         """
+        # Configurar storage Supabase Vector
+        supabase_storage = SupabaseVectorStorage()
+        
         return Crew(
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
             verbose=True,
-        )
-    
-    def orchestrated_crew(self) -> Crew:
-        """
-        Cria o Falachefe Crew - Modo Orquestrado (RECOMENDADO)
-        
-        Plataforma multi-agente de consultoria para PMEs brasileiras
-        
-        Arquitetura:
-        - Processo HIERÁRQUICO com agente orquestrador
-        - Orquestrador analisa demandas e delega para especialistas
-        - Agente de suporte formata e envia respostas via WhatsApp
-        - Especialistas focados em suas áreas (Finanças, Marketing, Vendas, RH)
-        
-        Use este crew para atendimento via WhatsApp com roteamento automático.
-        """
-        
-        # IMPORTANTE: Em processo hierárquico, o manager_agent NÃO deve estar na lista agents
-        # Apenas os agentes subordinados (especialistas + suporte)
-        subordinate_agents = [
-            self.financial_expert(),
-            self.marketing_expert(),
-            self.sales_expert(),
-            self.hr_expert(),
-            self.support_agent(),
-        ]
-        
-        # Tasks de orquestração (apenas as relevantes para o fluxo orquestrado)
-        orchestration_tasks = [
-            self.orchestrate_request(),
-            self.format_and_send_response(),
-        ]
-
-        return Crew(
-            agents=subordinate_agents,  # Apenas agentes subordinados (SEM orchestrator)
-            tasks=orchestration_tasks,  # Apenas tasks de orquestração
-            process=Process.hierarchical,  # Processo hierárquico
-            manager_agent=self.orchestrator(),  # Orquestrador como manager
-            verbose=True,
-            # Documentação do processo hierárquico:
-            # https://docs.crewai.com/concepts/processes#hierarchical-process
+            memory=True,  # Habilita memória de longo prazo
+            long_term_memory=LongTermMemory(
+                storage=supabase_storage  # Usa Supabase ao invés de SQLite
+            )
         )

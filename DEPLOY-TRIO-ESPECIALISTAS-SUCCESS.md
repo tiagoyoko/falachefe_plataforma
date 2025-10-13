@@ -398,3 +398,5 @@ Queries: Otimizadas e testadas
 - "Mais visibilidade, mais vendas." - **Max** 💰
 - "Cuidar de pessoas é cuidar do negócio." - **Lia** 💙
 
+
+

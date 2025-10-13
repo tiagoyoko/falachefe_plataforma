@@ -167,3 +167,5 @@ POST http://localhost:3000/api/financial/test
 
 **Status Atual:** Prompts melhorados, aguardando atualização da tool para usar Supabase diretamente.
 
+
+

@@ -256,3 +256,5 @@ Agora temos:
 
 **Assinatura:** "Planejar é o primeiro passo para lucrar com segurança." - Leo 📊
 
+
+

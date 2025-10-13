@@ -247,3 +247,5 @@ git push origin master
 
 **Assinatura:** "Calma, vamos olhar juntos os números." - Leo 📊
 
+
+

@@ -294,7 +294,7 @@ Analise a mensagem do usuário e classifique em UMA das categorias:
 Retorne APENAS um JSON no formato:
 {
   "type": "categoria",
-  "specialist": "none|financial_expert|marketing_expert|sales_expert|hr_expert|orchestrator",
+  "specialist": "none|financial_expert|marketing_sales_expert|hr_expert",
   "confidence": 0.95,
   "reasoning": "breve explicação"
 }"""
@@ -373,12 +373,12 @@ Como posso ajudar sua empresa hoje?'''
                 'needs_specialist': True
             }
         
-        # Default: usar orquestrador
+        # Default: questão geral (será tratada como não especializada)
         return {
             'type': 'general',
-            'specialist': 'orchestrator',
+            'specialist': 'none',
             'confidence': 0.5,
-            'needs_specialist': True
+            'needs_specialist': False
         }
 
 
@@ -679,10 +679,9 @@ Contato: {user_company_data['user_name']} ({user_company_data['user_role']})"""
                 result = simple_crew.kickoff(inputs=base_inputs)
             
             else:
-                # Questão geral ou complexa → usar orquestrador hierárquico
-                print("🎯 Using orchestrator for complex/general query", file=sys.stderr)
-                orchestrated = crew_class.orchestrated_crew()
-                result = orchestrated.kickoff(inputs=base_inputs)
+                # Questão geral → resposta padrão
+                print("ℹ️ General query without specific specialist", file=sys.stderr)
+                result = "Olá! Sou o assistente do FalaChefe. Como posso ajudá-lo com sua empresa hoje? Posso auxiliar em:\n\n💰 Finanças (fluxo de caixa, custos)\n📱 Marketing e Vendas\n👥 Gestão de Pessoas"
             
             processing_time = int((time() - start_time) * 1000)
             

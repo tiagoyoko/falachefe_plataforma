@@ -69,29 +69,22 @@ def process_webhook_message(inputs: dict) -> dict:
         if not inputs.get("user_id"):
             raise ValueError("user_id is required")
         
-        # Criar crew orquestrada (hierárquica)
-        print("🚀 Initializing FalachefeCrew (orchestrated)...", file=sys.stderr)
-        crew = FalachefeCrew()
-        orchestrated = crew.orchestrated_crew()
+        # AVISO: Este webhook processor está obsoleto
+        # Use o classificador no api_server.py para determinar o especialista correto
+        print("⚠️ webhook_processor.py está obsoleto. Use api_server.py com classificador", file=sys.stderr)
         
-        # Preparar inputs para o crew
-        # Mapear variáveis do webhook para as esperadas pelo CrewAI
+        # Preparar inputs básicos
         user_message = inputs.get("user_message", inputs.get("user_request", ""))
         user_id = inputs.get("user_id", "")
         phone = inputs.get("phone_number", inputs.get("whatsapp_number", ""))
         
         crew_inputs = {
-            # Variáveis para orchestrate_request task
             "user_request": user_message,
             "user_context": inputs.get("context", {}).get("user_context", "Cliente via webhook"),
             "whatsapp_number": phone,
-            
-            # Variáveis para format_and_send_response task
-            "specialist_response": "Processando sua solicitação...",  # Será substituído pelo resultado real
-            "specialist_type": "orchestrator",
+            "specialist_response": "Use o endpoint /process com classificador",
+            "specialist_type": "none",
             "conversation_context": f"Usuário {user_id} solicitou: {user_message}",
-            
-            # Variáveis adicionais para outras tasks
             "user_id": user_id,
             "phone_number": phone,
             "user_message": user_message,
@@ -103,31 +96,20 @@ def process_webhook_message(inputs: dict) -> dict:
             **inputs.get("context", {})
         }
         
-        print(f"🎯 Executing crew with inputs...", file=sys.stderr)
-        
-        # Executar crew
-        result = orchestrated.kickoff(inputs=crew_inputs)
+        print(f"⚠️ Este endpoint está obsoleto", file=sys.stderr)
         
         # Calcular tempo de processamento
         processing_time = int((time() - start_time) * 1000)  # em ms
         
-        print(f"✅ Crew executed successfully in {processing_time}ms", file=sys.stderr)
-        
-        # Formatar resposta
+        # Retornar mensagem informativa
         return {
-            "success": True,
-            "response": str(result),
+            "success": False,
+            "error": "webhook_processor está obsoleto. Use o endpoint /process com classificador LLM",
+            "response": "Por favor, use o endpoint /process que utiliza o classificador para determinar o especialista correto.",
             "metadata": {
                 "processed_at": datetime.now().isoformat(),
-                "crew_type": "hierarchical",
-                "agents_used": [
-                    "orchestrator",
-                    "financial_expert",
-                    "marketing_expert",
-                    "sales_expert",
-                    "hr_expert",
-                    "support_agent"
-                ],
+                "crew_type": "deprecated",
+                "agents_used": [],
                 "processing_time_ms": processing_time,
                 "user_id": inputs.get("user_id"),
                 "phone_number": inputs.get("phone_number")

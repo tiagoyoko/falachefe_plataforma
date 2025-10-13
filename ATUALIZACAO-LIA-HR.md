@@ -257,3 +257,5 @@ Mais empatia, menos conflito. 💙
 
 **Assinatura:** "Cuidar de pessoas é cuidar do negócio." - Lia 💙
 
+
+
