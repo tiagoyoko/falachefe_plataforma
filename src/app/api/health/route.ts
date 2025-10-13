@@ -16,7 +16,7 @@ export async function GET() {
     let dbStatus = 'not tested';
     try {
       const { db } = await import('@/lib/db');
-      const result = await db.execute('SELECT 1 as test');
+      await db.execute('SELECT 1 as test');
       dbStatus = 'connected';
     } catch (error) {
       dbStatus = `error: ${error instanceof Error ? error.message : 'unknown'}`;

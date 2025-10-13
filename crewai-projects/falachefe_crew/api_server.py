@@ -60,10 +60,10 @@ def get_user_company_data(user_id: str) -> dict:
     try:
         # URL do Supabase
         supabase_url = os.getenv("SUPABASE_URL", "https://zpdartuyaergbxmbmtur.supabase.co")
-        supabase_key = os.getenv("SUPABASE_KEY", "")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY", "")
         
         if not supabase_key:
-            print("⚠️ SUPABASE_KEY not configured, using defaults", file=sys.stderr)
+            print("⚠️ SUPABASE_SERVICE_ROLE_KEY not configured, using defaults", file=sys.stderr)
             return {
                 "company_name": "Empresa não identificada",
                 "company_sector": "não especificado",
@@ -135,10 +135,10 @@ def save_agent_message(
     """
     try:
         supabase_url = os.getenv("SUPABASE_URL", "https://zpdartuyaergbxmbmtur.supabase.co")
-        supabase_key = os.getenv("SUPABASE_KEY", "")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY", "")
         
         if not supabase_key:
-            print("⚠️ SUPABASE_KEY not configured, cannot save agent message", file=sys.stderr)
+            print("⚠️ SUPABASE_SERVICE_ROLE_KEY not configured, cannot save agent message", file=sys.stderr)
             return False
         
         headers = {
@@ -199,7 +199,7 @@ def get_financial_status(user_id: str) -> str:
     """
     try:
         supabase_url = os.getenv("SUPABASE_URL", "https://zpdartuyaergbxmbmtur.supabase.co")
-        supabase_key = os.getenv("SUPABASE_KEY", "")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY", "")
         
         if not supabase_key:
             return "Status financeiro não disponível. Cliente está iniciando uso da plataforma."

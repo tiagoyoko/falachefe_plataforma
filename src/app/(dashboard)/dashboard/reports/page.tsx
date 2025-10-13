@@ -179,7 +179,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {monthlyData.map((data, index) => (
+                  {monthlyData.map((data) => (
                     <div key={data.month} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-2 h-2 bg-primary rounded-full" />

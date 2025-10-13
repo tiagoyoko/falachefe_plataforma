@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Bot, MessageSquare, BarChart3, Shield, Zap, Users, Target, Headphones } from "lucide-react";
+import { Bot, BarChart3, Shield, Zap, Users, Target, Headphones } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Soluções - Falachefe para seu Negócio",

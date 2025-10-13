@@ -8,8 +8,7 @@ import {
   jsonb,
   pgEnum,
   varchar,
-  decimal,
-  index
+  decimal
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";

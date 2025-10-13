@@ -50,17 +50,17 @@ export async function POST(request: NextRequest) {
 
     // Preparar contexto adicional para o CrewAI
     const context = {
-      source: 'web-chat',
       conversationId: conversationId || `web_${Date.now()}`,
+      source: 'web-chat',  // IMPORTANTE: Identifica origem web para não enviar UAZAPI
       includeUserProfile: includeUserProfile ?? true,
       forceToolUse: forceToolUse ?? false,
       timestamp: new Date().toISOString()
     };
 
     // Chamar API Flask do CrewAI no servidor Hetzner
-    // Produção: http://37.27.248.13:8000 (Hetzner VPS)
+    // Produção: https://api.falachefe.app.br/process (Traefik + HTTPS)
     // Pode ser sobrescrito via CREWAI_API_URL
-    const crewAIUrl = process.env.CREWAI_API_URL || 'http://37.27.248.13:8000/process';
+    const crewAIUrl = process.env.CREWAI_API_URL || 'https://api.falachefe.app.br/process';
     
     console.log('🤖 Calling CrewAI Flask API:', {
       url: crewAIUrl,

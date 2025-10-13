@@ -8,7 +8,7 @@ import { Button } from "./ui/button";
 import { MessageSquare, Bot, BarChart3, Users, Info, Target, HelpCircle } from "lucide-react";
 
 export function SiteHeader() {
-  const { data: session, isPending } = useSession();
+  const { data: session } = useSession();
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">

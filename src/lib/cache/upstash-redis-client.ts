@@ -354,7 +354,8 @@ export class UpstashRedisClient {
    * Publicar mensagem em canal (compatibilidade)
    * Nota: Upstash Redis não suporta pub/sub via REST API
    */
-  async publish(channel: string, message: any): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  async publish(_channel: string, _message: any): Promise<void> {
     console.warn('⚠️ Pub/Sub not supported in Upstash REST API (HTTP)');
     console.warn('   Use Upstash Redis with TCP connection for pub/sub');
     // Não fazer nada, apenas logar warning
@@ -364,7 +365,8 @@ export class UpstashRedisClient {
    * Subscrever a canal (compatibilidade)
    * Nota: Upstash Redis não suporta pub/sub via REST API
    */
-  async subscribe(channel: string, callback: (message: any) => void): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  async subscribe(_channel: string, _callback: (message: any) => void): Promise<void> {
     console.warn('⚠️ Pub/Sub not supported in Upstash REST API (HTTP)');
     console.warn('   Use Upstash Redis with TCP connection for pub/sub');
     // Não fazer nada, apenas logar warning

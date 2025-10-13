@@ -1,6 +1,6 @@
 import { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
 import { MessageClassifier } from './classifier';
-import { MessageContentType, MessageDestination, MessageClassification } from './types';
+import { MessageDestination, MessageClassification } from './types';
 
 /**
  * Configuração de destino de processamento
@@ -74,8 +74,8 @@ export class MessageRouter {
    */
   static async route(
     message: UAZMessage, 
-    chat: UAZChat,
-    baseUrl: string
+    _chat: UAZChat,
+    _baseUrl: string
   ): Promise<{
     classification: MessageClassification;
     destination: ProcessingDestination;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Search, 
-  Filter, 
   Download, 
-  MoreHorizontal, 
   UserCheck, 
   UserX, 
-  CreditCard, 
   Mail,
   Calendar,
   Building,
@@ -76,7 +73,7 @@ export function UsersTable() {
   });
 
   // Carregar usuários
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -101,11 +98,11 @@ export function UsersTable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, search, subscriptionStatus]);
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, search, subscriptionStatus]);
+  }, [fetchUsers]);
 
   // Função para formatar data
   const formatDate = (dateString: string) => {
@@ -230,7 +227,8 @@ export function UsersTable() {
     }
   };
 
-  // Função para alterar plano
+  // Função para alterar plano (não utilizada ainda)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const changePlan = async (userId: string, newPlanId: string) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {

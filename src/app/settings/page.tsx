@@ -6,14 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Settings, 
   Bell, 
   Shield, 
   Globe, 
-  Palette, 
-  Smartphone,
-  Mail,
-  Volume2
+  Smartphone
 } from "lucide-react";
 
 export const metadata: Metadata = {

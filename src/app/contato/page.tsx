@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Mail, Phone, MapPin, Clock, MessageSquare, Users, Zap } from "lucide-react";
+import { Mail, MapPin, Clock, MessageSquare, Users, Zap } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contato - Fale com a Equipe Falachefe",

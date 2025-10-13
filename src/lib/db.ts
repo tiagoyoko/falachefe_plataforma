@@ -5,8 +5,9 @@ import * as schema from "./schema-consolidated";
 // Carregar variáveis de ambiente se não estiverem definidas
 if (!process.env.DATABASE_URL && !process.env.POSTGRES_URL) {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('dotenv').config({ path: '.env.local' });
-  } catch (e) {
+  } catch {
     // Ignorar se dotenv não estiver disponível
   }
 }

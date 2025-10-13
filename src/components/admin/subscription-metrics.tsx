@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
   Users, 
-  CreditCard, 
   TrendingUp, 
   TrendingDown, 
   AlertTriangle, 
@@ -17,12 +16,10 @@ import {
   DollarSign,
   UserCheck,
   UserX,
-  Calendar,
   BarChart3,
   PieChart,
   Activity
 } from "lucide-react";
-import { useSession } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
 
 // Tipos
@@ -105,14 +102,13 @@ interface SubscriptionMetrics {
 
 // Componente principal
 export function SubscriptionMetrics() {
-  const { data: session } = useSession();
   const [metrics, setMetrics] = useState<SubscriptionMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('month');
   const [selectedView, setSelectedView] = useState('overview');
 
   // Carregar métricas
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/metrics/subscriptions?period=${period}`);
@@ -129,11 +125,11 @@ export function SubscriptionMetrics() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
 
   useEffect(() => {
     fetchMetrics();
-  }, [period]);
+  }, [fetchMetrics]);
 
   // Função para formatar moeda
   const formatCurrency = (value: number) => {
@@ -443,7 +439,7 @@ export function SubscriptionMetrics() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {metrics.monthlyTrends.slice(-6).map((trend, index) => (
+            {metrics.monthlyTrends.slice(-6).map((trend) => (
               <div key={trend.month} className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex-1">
                   <div className="font-medium">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, MessageSquare, Bot, BarChart3, Users, Shield, Zap } from "lucide-react";
+import { Check, Star, MessageSquare } from "lucide-react";
 
 const plans = [
   {

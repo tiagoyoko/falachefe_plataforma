@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { conversations, messages, companies, userOnboarding } from '@/lib/schema';
+import { conversations, messages, companies } from '@/lib/schema';
 import { userSubscriptions } from '@/lib/billing-schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import type { UAZMessage, UAZChat } from '@/lib/uaz-api/types';

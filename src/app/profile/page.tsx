@@ -33,7 +33,7 @@ export default function ProfilePage() {
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
+  const [, setOnboardingData] = useState<OnboardingData | null>(null);
 
   // Dados capturados pela plataforma sobre o usuário e empresa
   const [userData, setUserData] = useState({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { financialData } from '@/lib/schema'
-import { eq, and, between, sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 /**
  * POST /api/financial/crewai

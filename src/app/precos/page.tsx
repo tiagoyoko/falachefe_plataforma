@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Check, Star, Zap } from "lucide-react";
+import { Check, Star } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Preços - Planos e Valores do Falachefe",

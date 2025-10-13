@@ -134,7 +134,7 @@ export class MessageClassifier {
    */
   private static determinePriority(
     contentType: MessageContentType, 
-    message: UAZMessage
+    _message: UAZMessage
   ): 'high' | 'medium' | 'low' {
     // Alta prioridade: texto puro (resposta rápida esperada)
     if (contentType === MessageContentType.TEXT_ONLY) {

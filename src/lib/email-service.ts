@@ -149,7 +149,7 @@ class EmailService {
     appName: string;
     appUrl: string;
   }) {
-    const { userName, verificationUrl, appName, appUrl } = data;
+    const { userName, verificationUrl, appName } = data;
 
     return {
       subject: `Verifique sua conta - ${appName}`,
@@ -218,7 +218,7 @@ class EmailService {
     appName: string;
     appUrl: string;
   }) {
-    const { userName, resetUrl, appName, appUrl } = data;
+    const { userName, resetUrl, appName } = data;
 
     return {
       subject: `Redefinir senha - ${appName}`,
@@ -288,7 +288,7 @@ class EmailService {
     appName: string;
     appUrl: string;
   }) {
-    const { userName, loginUrl, appName, appUrl } = data;
+    const { userName, loginUrl, appName } = data;
 
     return {
       subject: `Bem-vindo(a) à ${appName}! 🎉`,
@@ -373,7 +373,7 @@ class EmailService {
       }
       
       // Testar conexão com Resend (apenas em produção)
-      const result = await resend.emails.send({
+      await resend.emails.send({
         from: this.fromEmail,
         to: ['test@example.com'],
         subject: 'Teste de configuração',
