@@ -229,6 +229,21 @@ If you encounter any issues:
 2. Review the documentation above
 3. Create a new issue with detailed information about your problem
 
+## ⚠️ Known Issues (Non-Critical)
+
+### Browser Extension Errors
+
+If you see errors like `jquery-1.3.2.min.js` or `screengrabber.js` in your browser console:
+
+- **Cause**: These are from browser extensions (screen capture, development tools, etc.)
+- **Impact**: None - they don't affect the application functionality
+- **Solution**: 
+  - Ignore these errors, or
+  - Disable browser extensions during development
+  - Open DevTools in incognito mode without extensions
+
+These errors appear with extension ID like `chrome-extension://[id]/` and are **NOT part of this project**.
+
 ---
 
 **Happy coding! 🚀**
