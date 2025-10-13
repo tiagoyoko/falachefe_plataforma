@@ -213,4 +213,3 @@ export class MessageRouter {
     return sender.split('@')[0] || sender;
   }
 }
-
