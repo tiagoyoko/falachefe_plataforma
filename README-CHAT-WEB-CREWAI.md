@@ -309,12 +309,10 @@ nano .env
 docker-compose up -d
 ```
 
-#### Opção B: Railway.app
+#### Opção B: Servidor Hetzner
 
-```bash
-cd crewai-projects/falachefe_crew
-railway up
-```
+O projeto já está deployado no servidor Hetzner (37.27.248.13:8000). 
+Veja `DEPLOY-HETZNER-SUCCESS.md` para detalhes.
 
 #### Opção C: Google Cloud Run
 
@@ -385,7 +383,7 @@ deploy:
 | Testes | ✅ Completo | Scripts automáticos |
 | Documentação | ✅ Completo | Guias completos |
 | Deploy Local | ✅ Funcional | Docker |
-| Deploy Produção | 🚀 Pronto | Railway/GCR |
+| Deploy Produção | ✅ Deployado | Hetzner (37.27.248.13) |
 
 ## 🤝 Contribuindo
 

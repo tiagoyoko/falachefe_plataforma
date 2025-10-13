@@ -82,29 +82,7 @@ docker-compose up -d
 docker-compose logs -f crewai-api
 ```
 
-### Opção B: Deploy em Railway (Alternativa Rápida)
-
-Se não conseguir acessar o Hetzner, use Railway:
-
-```bash
-cd /Users/tiagoyokoyama/Falachefe/crewai-projects/falachefe_crew
-
-# Deploy com Railway CLI
-railway up
-
-# Ou siga o guia:
-cat DEPLOY-RAILWAY.md
-```
-
-Após deploy no Railway, atualizar variável na Vercel:
-```bash
-# Substituir URL do Hetzner pela URL do Railway
-vercel env rm CREWAI_API_URL production
-echo "https://sua-url.railway.app" | vercel env add CREWAI_API_URL production
-vercel --prod
-```
-
-### Opção C: Docker Local (Para Testes)
+### Opção B: Docker Local (Para Testes)
 
 Rodar localmente para testes imediatos:
 
@@ -145,12 +123,11 @@ npm run dev
 - [ ] Testar health (curl localhost:8000/health)
 - [ ] Testar externamente (curl http://37.27.248.13:8000/health)
 
-### Para Railway (alternativa):
-- [ ] Instalar CLI (npm install -g @railway/cli)
-- [ ] Login (railway login)
-- [ ] Deploy (railway up)
-- [ ] Copiar URL gerada
-- [ ] Atualizar Vercel
+### Para Docker Local:
+- [ ] Rodar docker-compose up -d
+- [ ] Verificar logs (docker-compose logs -f)
+- [ ] Testar endpoint local (curl localhost:8000/health)
+- [ ] Ajustar CREWAI_API_URL se necessário
 - [ ] Testar
 
 ### Para Local (testes):
@@ -167,12 +144,12 @@ npm run dev
 Reinicie o servidor e verifique os containers.
 
 ### Opção 2: Se Não Tem Acesso
-Use **Railway** para deploy rápido (5-10 minutos):
+Use **Docker Local** para testes (5-10 minutos):
 1. `cd crewai-projects/falachefe_crew`
-2. `railway login`
-3. `railway up`
-4. Atualizar URL na Vercel
-5. Testar
+2. `docker-compose up -d`
+3. Verificar logs: `docker-compose logs -f`
+4. Testar localmente
+5. Ajustar configuração conforme necessário
 
 ### Opção 3: Teste Local Imediato
 Rode Docker local para validar que tudo funciona.
@@ -182,14 +159,14 @@ Rode Docker local para validar que tudo funciona.
 ## 📚 Documentação Relacionada
 
 - `DEPLOY-HETZNER-SUCCESS.md` - Setup original do Hetzner
-- `DEPLOY-RAILWAY.md` - Guia alternativo Railway
 - `GUIA-CHAT-WEB-DOCKER.md` - Docker local
 - `README-CHAT-WEB-CREWAI.md` - Visão geral
+- `ARQUITETURA-DOMINIOS.md` - Arquitetura completa
 
 ---
 
 **O que você prefere fazer?**
 1. 🔧 Reiniciar Hetzner (se tem acesso SSH)
-2. 🚂 Deploy no Railway (alternativa rápida)
-3. 🐳 Docker local (para testes)
+2. 🐳 Docker local (para testes)
+3. 📊 Verificar status e logs do servidor
 

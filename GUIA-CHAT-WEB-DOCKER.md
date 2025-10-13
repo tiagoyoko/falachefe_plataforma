@@ -327,19 +327,14 @@ docker-compose -f docker-compose.yml up -d
 # Edite nginx/nginx.conf com seu domínio
 ```
 
-### Opção B: Railway.app
+### Opção B: Servidor Hetzner
 
-```bash
-cd crewai-projects/falachefe_crew
+O projeto já está deployado no servidor Hetzner com Docker Swarm:
+- **IP**: 37.27.248.13:8000
+- **Stack**: Docker Compose
+- **Proxy**: Traefik (api.falachefe.app.br)
 
-# Railway lê automaticamente:
-# - Dockerfile
-# - railway.json (se existir)
-# - Porta 8000 do gunicorn
-
-# Deploy:
-railway up
-```
+Veja `DEPLOY-HETZNER-SUCCESS.md` e `ARQUITETURA-DOMINIOS.md` para detalhes.
 
 ### Opção C: Google Cloud Run
 
@@ -500,7 +495,7 @@ crew_instance = FalachefeCrew()
 - [Flask](https://flask.palletsprojects.com/)
 - [CrewAI](https://docs.crewai.com/)
 - [Nginx](https://nginx.org/en/docs/)
-- [Railway Deploy](https://docs.railway.app/)
+- [Docker Swarm](https://docs.docker.com/engine/swarm/)
 
 ---
 

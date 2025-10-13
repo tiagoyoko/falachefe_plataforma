@@ -263,11 +263,10 @@ A Vercel **NÃO suporta Python** por padrão no runtime serverless. Portanto:
 
 #### Opção A: Deploy CrewAI Separadamente (Recomendado)
 
-**Serviços Recomendados**:
-- Railway.app (mais fácil para Python)
-- Render.com (suporte nativo a Python)
-- Google Cloud Run (containerizado)
-- Heroku (plataforma madura)
+**Serviços Utilizados**:
+- Hetzner (servidor dedicado - 37.27.248.13)
+- Docker Swarm (orquestração)
+- Traefik (proxy reverso - api.falachefe.app.br)
 
 **Arquitetura**:
 ```
@@ -275,7 +274,7 @@ Interface Web (Vercel)
     ↓
 /api/chat (Vercel)
     ↓
-CrewAI Service (Railway)
+CrewAI Service (Hetzner)
     ↓
 FalachefeCrew (Python)
 ```
@@ -283,8 +282,8 @@ FalachefeCrew (Python)
 **Mudança Necessária**:
 ```typescript
 // src/app/api/chat/route.ts
-const crewAIUrl = process.env.CREWAI_SERVICE_URL || 
-                  'https://falachefe-crewai.railway.app/process';
+const crewAIUrl = process.env.CREWAI_API_URL || 
+                  'http://37.27.248.13:8000/process';
 ```
 
 #### Opção B: Vercel Python Runtime
@@ -313,20 +312,20 @@ class handler(BaseHTTPRequestHandler):
 }
 ```
 
-#### Opção C: Fila Assíncrona (Upstash QStash)
+#### Opção C: Fila Assíncrona (Upstash Redis)
 
 Arquitetura desacoplada:
 ```
-/api/chat → Upstash QStash → Worker Python → Callback
+/api/chat → Upstash Redis Queue → Worker Python (Hetzner) → Callback
 ```
 
 ## 📊 Performance
 
 ### Métricas Esperadas
 
-| Métrica | Local | Produção (Railway) |
+| Métrica | Local | Produção (Hetzner) |
 |---------|-------|-------------------|
-| Latência total | 10-30s | 15-40s |
+| Latência total | 10-30s | 12-35s |
 | /api/chat | <100ms | <200ms |
 | /api/crewai/process | 10-30s | 15-40s |
 | Python spawn | <500ms | <1s |
@@ -419,7 +418,7 @@ const timeout = setTimeout(() => {
 - [CrewAI Documentation](https://docs.crewai.com/)
 - [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction)
 - [Vercel Functions](https://vercel.com/docs/functions)
-- [Railway Python Deploy](https://docs.railway.app/guides/python)
+- [Docker Swarm](https://docs.docker.com/engine/swarm/)
 
 ## 🎯 Checklist de Implementação
 

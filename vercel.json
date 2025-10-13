@@ -10,12 +10,6 @@
       "maxDuration": 120
     }
   },
-  "crons": [
-    {
-      "path": "/api/cron/process-queue",
-      "schedule": "* * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",

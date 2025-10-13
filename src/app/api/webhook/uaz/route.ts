@@ -3,7 +3,6 @@ import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
 import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent, UAZReceiptEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
-import { createRedisQueue } from '@/lib/queue/redis-queue';
 import { WindowControlService } from '@/lib/window-control/window-service';
 import { UpstashRedisClient as RedisClient } from '@/lib/cache/upstash-redis-client';
 import { MessageRouter, MessageDestination } from '@/lib/message-router';
@@ -428,82 +427,25 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           result.conversation.id
         );
 
-        // Processar mensagem
-        try {
-          console.log('📬 Enqueuing message to Redis Queue for async processing...');
-          
-          // Obter Redis client
-          const redis = await initializeRedisClient();
-          const redisQueue = createRedisQueue(redis);
-
-          if (!baseWorkerUrl) {
-            console.error('❌ Worker URL not configured');
-            throw new Error('Worker URL not configured');
-          }
-
-          console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
-
-          // Enfileirar mensagem para processamento assíncrono
-          const queueResult = await redisQueue.enqueue(
-            targetEndpoint,
-            {
-              message: payload.message || '',
-              userId: payload.userId || '',
-              phoneNumber: payload.phoneNumber || '',
-              context: payload.context || { conversationId: result.conversation.id }
-            },
-            {
-              retries: routing.destination.retries,
-              delay: 0
-            }
-          );
-
-          if (queueResult.success) {
-            console.log('✅ Message queued successfully:', {
-              jobId: queueResult.jobId,
-              destination: targetEndpoint,
-              contentType: routing.classification.contentType,
-              userId: result.user.id
-            });
-          } else {
-            console.error('❌ Failed to queue message:', queueResult.error);
-            throw new Error(queueResult.error || 'Failed to queue message');
-          }
-          
-        } catch (error) {
-          console.error('❌ Error queueing message to Redis:', error);
-          
-          // Fallback: tentar processar diretamente (se Redis falhar)
-          console.log('🔄 Trying direct processing as fallback...');
-          
-          try {
-            const directResponse = await fetch(targetEndpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload),
-              signal: AbortSignal.timeout(routing.destination.timeout || 5000)
-            });
-            
-            if (directResponse.ok) {
-              console.log('✅ Direct processing succeeded');
-            }
-          } catch (fallbackError) {
-            console.error('❌ Direct processing also failed:', fallbackError);
-            
-            // Enviar mensagem de erro ao usuário
-            try {
-              await sendResponseToUserWithWindowValidation(
-                chat,
-                'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
-                owner,
-                token,
-                message.sender
-              );
-            } catch (sendError) {
-              console.error('Failed to send error message to user:', sendError);
-            }
-          }
+        // Processar mensagem de forma assíncrona (fire-and-forget)
+        console.log('🚀 Processing message asynchronously...');
+        
+        if (!baseWorkerUrl) {
+          console.error('❌ Worker URL not configured');
+          return;
         }
+
+        console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
+
+        // Processar de forma assíncrona sem bloquear webhook
+        // Promise não aguardada (fire-and-forget)
+        processMessageAsync(targetEndpoint, payload, routing.destination.timeout || 120000, chat, owner, token, message.sender)
+          .then(() => {
+            console.log('✅ Async processing completed');
+          })
+          .catch((error) => {
+            console.error('❌ Async processing failed:', error);
+          });
       } else {
         console.log('⏭️ Skipping CrewAI processing (message from me)');
       }
@@ -753,4 +695,51 @@ async function sendApprovedTemplate(
   }
 }
 
-// Função sendResponseToUser removida (não utilizada)
+/**
+ * Processa mensagem de forma assíncrona (fire-and-forget)
+ * Não bloqueia resposta do webhook
+ */
+async function processMessageAsync(
+  endpoint: string,
+  payload: Record<string, unknown>,
+  timeout: number,
+  chat: UAZChat,
+  owner: string,
+  token: string,
+  sender: string
+): Promise<void> {
+  try {
+    console.log('📤 Sending request to CrewAI:', {
+      endpoint,
+      timeout: `${timeout}ms`,
+    });
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeout),
+    });
+
+    if (!response.ok) {
+      throw new Error(`CrewAI returned ${response.status}: ${await response.text()}`);
+    }
+
+    console.log('✅ CrewAI processing succeeded');
+  } catch (error) {
+    console.error('❌ CrewAI processing failed:', error);
+    
+    // Enviar mensagem de erro ao usuário
+    try {
+      await sendResponseToUserWithWindowValidation(
+        chat,
+        'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
+        owner,
+        token,
+        sender
+      );
+    } catch (sendError) {
+      console.error('Failed to send error message to user:', sendError);
+    }
+  }
+}

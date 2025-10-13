@@ -268,8 +268,8 @@ if (routing.shouldProcess) {
 # URL base da API CrewAI
 CREWAI_API_URL=https://falachefe.app.br
 
-# ou (legacy)
-RAILWAY_WORKER_URL=https://falachefe.app.br
+# URL do servidor Hetzner
+CREWAI_API_URL=http://37.27.248.13:8000
 ```
 
 ### Timeouts por Tipo
