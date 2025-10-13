@@ -83,10 +83,11 @@ export interface UAZWebhookPayload {
   EventType: string;
   chat?: UAZChat;
   message?: UAZMessage;
-  event?: UAZPresenceEvent;
+  event?: UAZPresenceEvent | UAZReceiptEvent;
   owner: string;
   token: string;
-  type?: string; // Para eventos de presença
+  type?: string; // Para eventos de presença e receipts
+  state?: string; // Estado do evento (Read, Delivered, etc.)
 }
 
 export interface UAZPresenceEvent {
@@ -101,6 +102,22 @@ export interface UAZPresenceEvent {
   BroadcastRecipients: string[] | null;
   State: 'composing' | 'recording' | 'paused' | 'available' | 'unavailable';
   Media: string;
+}
+
+export interface UAZReceiptEvent {
+  Chat: string;
+  Sender: string;
+  IsFromMe: boolean;
+  IsGroup: boolean;
+  AddressingMode: string;
+  SenderAlt: string;
+  RecipientAlt: string;
+  BroadcastListOwner: string;
+  BroadcastRecipients: string[] | null;
+  MessageIDs: string[];
+  Timestamp: string;
+  Type: 'read' | 'delivery';
+  MessageSender: string;
 }
 
 export interface UAZChat {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UAZClient } from '@/lib/uaz-api/client';
 import { UAZError } from '@/lib/uaz-api/errors';
-import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent } from '@/lib/uaz-api/types';
+import { UAZWebhookPayload, UAZMessage, UAZChat, UAZPresenceEvent, UAZReceiptEvent } from '@/lib/uaz-api/types';
 import { MessageService } from '@/services/message-service';
 import { createQStashClient } from '@/lib/queue/qstash-client';
 import { WindowControlService } from '@/lib/window-control/window-service';
@@ -105,8 +105,13 @@ function validateUAZPayload(payload: unknown): payload is UAZWebhookPayload {
   // Validação específica por tipo de evento
   switch (p.EventType) {
     case 'messages':
-    case 'messages_update':
       return !!(p.message && p.chat);
+    
+    case 'messages_update':
+      // messages_update pode ter:
+      // - message + chat (atualização de mensagem)
+      // - event + type (read receipts, delivery receipts)
+      return !!((p.message && p.chat) || (p.event && p.type));
     
     case 'presence':
       return !!(p.event && p.type);
@@ -224,6 +229,13 @@ export async function GET() {
 }
 
 /**
+ * Type guard para verificar se é um UAZReceiptEvent
+ */
+function isReceiptEvent(event: UAZPresenceEvent | UAZReceiptEvent): event is UAZReceiptEvent {
+  return 'Type' in event && (event.Type === 'read' || event.Type === 'delivery');
+}
+
+/**
  * Processa eventos do webhook baseado no tipo
  */
 async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
@@ -239,6 +251,9 @@ async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
     case 'messages_update':
       if (message && chat) {
         await handleMessageUpdateEvent({ message, chat, owner, token });
+      } else if (event) {
+        // Read receipts e delivery receipts
+        await handleMessageReceiptEvent(payload);
       }
       break;
     
@@ -247,8 +262,8 @@ async function processWebhookEvent(payload: UAZWebhookPayload): Promise<void> {
       break;
     
     case 'presence':
-      if (event) {
-        await handlePresenceEvent({ event, owner, token });
+      if (event && !isReceiptEvent(event)) {
+        await handlePresenceEvent({ event: event as UAZPresenceEvent, owner, token });
       }
       break;
     
@@ -521,6 +536,48 @@ async function handleMessageUpdateEvent(data: { message: UAZMessage; chat: UAZCh
 
   // TODO: Atualizar status da mensagem no banco
   // TODO: Notificar usuário sobre status (entregue, lida, etc.)
+}
+
+/**
+ * Processa eventos de confirmação de leitura e entrega
+ */
+async function handleMessageReceiptEvent(payload: UAZWebhookPayload): Promise<void> {
+  const { event, type, state, owner } = payload;
+  
+  if (!event) return;
+  
+  // Verificar se é um receipt event
+  if (!isReceiptEvent(event)) {
+    console.log('⚠️ Not a receipt event, skipping');
+    return;
+  }
+  
+  console.log('📬 Processing message receipt event:', {
+    type: type,
+    state: state,
+    chat: event.Chat,
+    sender: event.Sender,
+    isFromMe: event.IsFromMe,
+    messageType: event.Type,
+    timestamp: event.Timestamp,
+    owner: owner,
+  });
+
+  // Read receipts (confirmações de leitura) não precisam de processamento
+  // Apenas logamos para debug
+  if (type === 'ReadReceipt' || event.Type === 'read') {
+    console.log('✓ Read receipt received - no action needed');
+    return;
+  }
+  
+  // Delivery receipts também não precisam de ação
+  if (type === 'DeliveryReceipt' || event.Type === 'delivery') {
+    console.log('✓ Delivery receipt received - no action needed');
+    return;
+  }
+
+  // TODO: Atualizar status das mensagens no banco se necessário
+  // TODO: Implementar métricas de entrega e leitura
 }
 
 /**
