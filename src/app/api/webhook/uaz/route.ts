@@ -726,7 +726,37 @@ async function processMessageAsync(
       throw new Error(`CrewAI returned ${response.status}: ${await response.text()}`);
     }
 
-    console.log('✅ CrewAI processing succeeded');
+    // ✅ LER A RESPOSTA DO CREWAI
+    const data = await response.json();
+    console.log('✅ CrewAI processing succeeded:', {
+      hasResponse: !!data.response,
+      processingTime: data.metadata?.processing_time_ms || 'unknown'
+    });
+
+    // ✅ EXTRAIR A MENSAGEM DE RESPOSTA
+    const crewaiMessage = data.response || data.message || data.result || '';
+    
+    if (!crewaiMessage) {
+      console.warn('⚠️  CrewAI returned empty response');
+      return;
+    }
+
+    console.log('📨 Sending CrewAI response to WhatsApp:', {
+      messageLength: crewaiMessage.length,
+      preview: crewaiMessage.slice(0, 100)
+    });
+
+    // ✅ ENVIAR RESPOSTA PARA O WHATSAPP
+    await sendResponseToUserWithWindowValidation(
+      chat,
+      crewaiMessage,
+      owner,
+      token,
+      sender
+    );
+
+    console.log('✅ Response sent to WhatsApp successfully');
+
   } catch (error) {
     console.error('❌ CrewAI processing failed:', error);
     
