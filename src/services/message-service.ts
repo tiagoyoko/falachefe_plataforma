@@ -58,7 +58,8 @@ export class MessageService {
         sender: message.sender,
         senderPn: message.sender_pn,
         chatPhone: chat.phone,
-        chatName: chat.name
+        chatName: chat.name,
+        fromMe: message.fromMe
       });
 
       // Normalizar número de telefone
@@ -71,7 +72,22 @@ export class MessageService {
         .replace('@c.us', '')
         .replace(/\D/g, ''); // Remove tudo que não é dígito
 
-      // ✨ NOVO: Verificar se usuário já existe na plataforma
+      // 🤖 NOVO: Detectar mensagem do próprio bot (agente)
+      const normalizedOwner = owner.replace(/\D/g, '');
+      const isAgentMessage = normalizedPhone === normalizedOwner || message.fromMe;
+
+      if (isAgentMessage) {
+        console.log('🤖 Agent message detected:', {
+          normalizedPhone,
+          normalizedOwner,
+          fromMe: message.fromMe
+        });
+        
+        // Processar como mensagem de agente
+        return await this.processAgentMessage(message, chat, owner, normalizedPhone);
+      }
+
+      // ✨ Verificar se usuário já existe na plataforma (somente para mensagens de usuário)
       const platformUserCheck = await this.checkPlatformUserWithoutCompany(normalizedPhone);
       
       if (platformUserCheck.hasUser && !platformUserCheck.hasCompanyRelation) {
@@ -221,6 +237,210 @@ export class MessageService {
     } catch (error) {
       console.error('❌ MessageService error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Processa mensagem do agente (bot)
+   * 
+   * @param message - Mensagem do UAZAPI
+   * @param chat - Chat do UAZAPI
+   * @param owner - Owner da instância
+   * @param botPhone - Número do bot
+   * @returns Dados da mensagem processada
+   */
+  private static async processAgentMessage(
+    message: UAZMessage,
+    chat: UAZChat,
+    owner: string,
+    botPhone: string
+  ): Promise<ProcessMessageResult> {
+    try {
+      // Buscar usuário de destino pelo número do chat
+      // chat.wa_chatid é o número do usuário que está recebendo a mensagem
+      const targetUserPhone = chat.wa_chatid
+        .replace('@s.whatsapp.net', '')
+        .replace('@c.us', '')
+        .replace(/\D/g, '');
+
+      console.log('🔍 Looking for target user:', {
+        targetUserPhone,
+        chatId: chat.id,
+        chatName: chat.name
+      });
+
+      // Buscar usuário em user_onboarding
+      const phoneDigits = targetUserPhone.slice(-11);
+      const phoneDigits9 = targetUserPhone.slice(-9);
+      
+      const onboardingData = await db.execute<{
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        whatsapp_phone: string;
+      }>(
+        sql`SELECT user_id, first_name, last_name, whatsapp_phone
+            FROM user_onboarding
+            WHERE whatsapp_phone = ${targetUserPhone}
+               OR whatsapp_phone = ${phoneDigits}
+               OR whatsapp_phone LIKE ${'%' + phoneDigits9}
+            LIMIT 1`
+      );
+
+      if (!onboardingData || onboardingData.length === 0) {
+        console.error('❌ Target user not found for agent message', {
+          targetUserPhone,
+          phoneDigits,
+          phoneDigits9,
+          chatId: chat.id
+        });
+        
+        // Retornar sucesso mesmo sem salvar (não falhar o webhook)
+        return {
+          success: true,
+          message: {
+            id: 'agent-message-no-user',
+            content: message.text || message.content || '',
+            uazMessageId: message.id || message.messageid || ''
+          },
+          conversation: {
+            id: 'no-conversation',
+            status: 'no-user-found'
+          },
+          user: {
+            id: 'unknown',
+            name: chat.name || 'Unknown',
+            phoneNumber: targetUserPhone,
+            isNewUser: false
+          }
+        };
+      }
+
+      const userData = onboardingData[0];
+      const userId = userData.user_id;
+      const userName = `${userData.first_name} ${userData.last_name}`.trim();
+
+      console.log('👤 Target user found:', {
+        userId,
+        userName,
+        phoneNumber: targetUserPhone
+      });
+
+      // Buscar company_id via subscription
+      const subscriptions = await db.select()
+        .from(userSubscriptions)
+        .where(eq(userSubscriptions.userId, userId))
+        .limit(1);
+
+      if (subscriptions.length === 0) {
+        console.warn('⚠️  No subscription found for target user, skipping save');
+        
+        return {
+          success: true,
+          message: {
+            id: 'agent-message-no-subscription',
+            content: message.text || message.content || '',
+            uazMessageId: message.id || message.messageid || ''
+          },
+          conversation: {
+            id: 'no-conversation',
+            status: 'no-subscription'
+          },
+          user: {
+            id: userId,
+            name: userName,
+            phoneNumber: targetUserPhone,
+            isNewUser: false
+          }
+        };
+      }
+
+      const companyId = subscriptions[0].companyId;
+
+      console.log('🏢 Company from subscription:', {
+        companyId,
+        userId
+      });
+
+      // Buscar ou criar conversação ativa
+      const conversation = await this.getOrCreateActiveConversation(
+        userId,
+        companyId
+      );
+
+      console.log('💬 Conversation:', {
+        id: conversation.id,
+        status: conversation.status
+      });
+
+      // Salvar mensagem do agente no banco
+      const savedMessage = await this.saveMessage({
+        conversationId: conversation.id,
+        senderId: 'agent-system', // ID simbólico para o agente
+        senderType: 'agent' as const,
+        content: message.text || message.content || '',
+        messageType: this.mapMessageType(message.type || message.messageType),
+        uazMessageId: message.id || message.messageid || '',
+        metadata: {
+          chatId: chat.id,
+          chatName: chat.name,
+          senderName: message.senderName || 'FalaChefe Agent',
+          owner: owner,
+          timestamp: message.messageTimestamp,
+          isGroup: message.isGroup || false,
+          fromMe: message.fromMe || false,
+          agentType: 'crewai',
+          botPhone: botPhone
+        }
+      });
+
+      console.log('✅ Agent message saved:', {
+        id: savedMessage.id,
+        conversationId: conversation.id,
+        targetUser: userId
+      });
+
+      return {
+        success: true,
+        message: {
+          id: savedMessage.id,
+          content: savedMessage.content,
+          uazMessageId: savedMessage.uazMessageId || ''
+        },
+        conversation: {
+          id: conversation.id,
+          status: conversation.status || 'active'
+        },
+        user: {
+          id: userId,
+          name: userName,
+          phoneNumber: targetUserPhone,
+          isNewUser: false
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error processing agent message:', error);
+      
+      // Não falhar o webhook por erro de salvamento
+      return {
+        success: false,
+        message: {
+          id: 'error',
+          content: message.text || message.content || '',
+          uazMessageId: message.id || message.messageid || ''
+        },
+        conversation: {
+          id: 'error',
+          status: 'error'
+        },
+        user: {
+          id: 'error',
+          name: 'Error',
+          phoneNumber: '0',
+          isNewUser: false
+        }
+      };
     }
   }
 
@@ -418,17 +638,17 @@ Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
     senderId: string;
     senderType: 'user' | 'agent' | 'system';
     content: string;
-    messageType: string;
+    messageType: 'text' | 'image' | 'video' | 'document' | 'audio' | 'myaudio' | 'ptt' | 'sticker' | 'template' | 'interactive' | 'flow';
     uazMessageId: string;
-    metadata: any;
-  }): Promise<any> {
+    metadata: Record<string, unknown>;
+  }): Promise<typeof messages.$inferSelect> {
     try {
       const insertedMessages = await db.insert(messages).values({
         conversationId: data.conversationId,
         senderId: data.senderId,
         senderType: data.senderType,
         content: data.content,
-        messageType: data.messageType as any,
+        messageType: data.messageType,
         uazMessageId: data.uazMessageId,
         status: 'delivered',
         metadata: data.metadata,
@@ -446,11 +666,11 @@ Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
   /**
    * Mapeia tipo de mensagem do UAZAPI para o schema
    */
-  private static mapMessageType(uazType: string | undefined): 'text' | 'image' | 'document' | 'audio' {
+  private static mapMessageType(uazType: string | undefined): 'text' | 'image' | 'video' | 'document' | 'audio' | 'myaudio' | 'ptt' | 'sticker' | 'template' | 'interactive' | 'flow' {
     const type = uazType?.toLowerCase() || 'text';
     
     // Mapeamento de tipos UAZAPI para schema
-    const typeMap: Record<string, any> = {
+    const typeMap: Record<string, 'text' | 'image' | 'video' | 'document' | 'audio' | 'myaudio' | 'ptt' | 'sticker' | 'template' | 'interactive' | 'flow'> = {
       'chat': 'text',
       'text': 'text',
       'extendedtextmessage': 'text',
@@ -460,11 +680,16 @@ Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
       'documentmessage': 'document',
       'audio': 'audio',
       'audiomessage': 'audio',
+      'myaudio': 'myaudio',
       'ptt': 'ptt',
       'video': 'video',
       'videomessage': 'video',
       'sticker': 'sticker',
-      'stickermessage': 'sticker'
+      'stickermessage': 'sticker',
+      'template': 'template',
+      'interactive': 'interactive',
+      'flow': 'flow',
+      'media': 'image' // Fallback para type='media'
     };
 
     return typeMap[type] || 'text';
@@ -509,7 +734,7 @@ Após isso, nossos agentes de IA estarão prontos para te ajudar! 🤖
   /**
    * Salvar mensagem simples (compatibilidade - método legado)
    */
-  static async saveLegacyMessage(message: any) {
+  static async saveLegacyMessage(message: unknown) {
     console.log('Saving message (legacy method):', message);
     return { success: true };
   }

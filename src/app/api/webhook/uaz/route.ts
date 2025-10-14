@@ -363,10 +363,17 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
       messageId: result.message.id,
       conversationId: result.conversation.id,
       userId: result.user.id,
-      userName: result.user.name
+      userName: result.user.name,
+      senderType: result.message.id.startsWith('agent-') ? 'agent' : 'user'
     });
 
-      // ✨ NOVO: Verificar se usuário precisa cadastrar empresa
+    // 🤖 Se for mensagem de agente, apenas salvar e retornar (não processar)
+    if (result.message.id.startsWith('agent-message') || result.conversation.status === 'no-user-found' || result.conversation.status === 'no-subscription') {
+      console.log('🤖 Agent message saved, skipping CrewAI processing');
+      return;
+    }
+
+      // ✨ Verificar se usuário precisa cadastrar empresa
       if (result.requiresCompanySetup && result.standardMessage) {
         console.log('📧 Enviando mensagem padrão: usuário precisa cadastrar empresa');
         
