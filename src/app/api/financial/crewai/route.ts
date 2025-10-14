@@ -180,15 +180,120 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/financial/crewai
- * Health check do endpoint
+ * Endpoint para CrewAI consultar saldo e transações do fluxo de caixa
  */
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    service: 'Financial CrewAI API',
-    endpoints: {
-      POST: 'Registrar transação do fluxo de caixa'
-    },
-    timestamp: new Date().toISOString()
-  });
+export async function GET(request: NextRequest) {
+  try {
+    // 1. VALIDAR AUTENTICAÇÃO
+    const token = request.headers.get('x-crewai-token');
+    const expectedToken = process.env.CREWAI_SERVICE_TOKEN;
+    
+    if (!token || token !== expectedToken) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Token de autenticação inválido ou ausente'
+        },
+        { status: 401 }
+      );
+    }
+
+    // 2. EXTRAIR QUERY PARAMS
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const startDate = searchParams.get('startDate') || '1900-01-01';
+    const endDate = searchParams.get('endDate') || '2099-12-31';
+
+    // Validações
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: 'userId é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Validar formato das datas
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      return NextResponse.json(
+        { success: false, error: 'Datas devem estar no formato YYYY-MM-DD' },
+        { status: 400 }
+      );
+    }
+
+    console.log('🔍 Consultando transações:', {
+      userId,
+      startDate,
+      endDate
+    });
+
+    // 3. CONSULTAR TRANSAÇÕES DO BANCO
+    const transactions = await db.execute<{
+      type: string;
+      amount: string;
+    }>(
+      sql`SELECT type, amount 
+          FROM cashflow_transactions 
+          WHERE user_id = ${userId}
+            AND date >= ${startDate}
+            AND date <= ${endDate}
+          ORDER BY date DESC`
+    );
+
+    console.log(`📊 Encontradas ${transactions.length} transações`);
+
+    // 4. AGREGAR DADOS
+    let entradas = 0;
+    let saidas = 0;
+
+    for (const transaction of transactions) {
+      const amount = Number(transaction.amount);
+      
+      if (transaction.type === 'entrada') {
+        entradas += amount;
+      } else if (transaction.type === 'saida') {
+        saidas += amount;
+      }
+    }
+
+    const saldo = entradas - saidas;
+
+    // 5. LOGAR RESUMO
+    console.log('✅ Resumo calculado:', {
+      userId,
+      periodo: `${startDate} a ${endDate}`,
+      entradas: `R$ ${entradas.toFixed(2)}`,
+      saidas: `R$ ${saidas.toFixed(2)}`,
+      saldo: `R$ ${saldo.toFixed(2)}`,
+      totalTransacoes: transactions.length
+    });
+
+    // 6. RETORNAR RESUMO
+    return NextResponse.json({
+      success: true,
+      data: {
+        summary: {
+          entradas: Number(entradas.toFixed(2)),
+          saidas: Number(saidas.toFixed(2)),
+          saldo: Number(saldo.toFixed(2)),
+          total: transactions.length
+        },
+        period: {
+          start: startDate,
+          end: endDate
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao consultar transações:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Erro ao consultar transações',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
 }
