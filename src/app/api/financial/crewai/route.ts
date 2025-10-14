@@ -12,11 +12,22 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get('x-crewai-token');
     const expectedToken = process.env.CREWAI_SERVICE_TOKEN;
     
+    // DEBUG: Logs temporários
+    console.log('🔍 [DEBUG] Token recebido:', token ? `${token.substring(0, 10)}...` : 'ausente');
+    console.log('🔍 [DEBUG] Token esperado:', expectedToken ? `${expectedToken.substring(0, 10)}...` : 'NÃO DEFINIDO');
+    console.log('🔍 [DEBUG] Tokens match:', token === expectedToken);
+    
     if (!token || token !== expectedToken) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Token de autenticação inválido ou ausente'
+          error: 'Token de autenticação inválido ou ausente',
+          debug: {
+            hasToken: !!token,
+            hasExpectedToken: !!expectedToken,
+            tokenPrefix: token ? token.substring(0, 10) : null,
+            expectedPrefix: expectedToken ? expectedToken.substring(0, 10) : null
+          }
         },
         { status: 401 }
       );
