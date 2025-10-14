@@ -3,7 +3,7 @@
  * Analisa tipo de mensagem e roteia para o processador correto
  */
 
-import { UAZMessage } from '@/lib/uaz-api/types';
+import { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
 
 export type MessageContentType = 
   | 'text_only'           // Apenas texto
@@ -151,7 +151,7 @@ export class MessageRouter {
   static getProcessingEndpoint(analysis: MessageAnalysis): {
     endpoint: string;
     method: 'crewai' | 'transcription' | 'vision' | 'document' | 'simple' | 'fallback';
-    config: Record<string, any>;
+    config: Record<string, unknown>;
   } {
     const baseUrl = process.env.CREWAI_API_URL || 'https://api.falachefe.app.br';
 
@@ -328,6 +328,31 @@ export class MessageRouter {
         hasMedia: false
       };
     }
+  }
+
+  /**
+   * Prepara payload para enviar ao CrewAI
+   */
+  static preparePayload(
+    message: UAZMessage,
+    chat: UAZChat,
+    classification: MessageAnalysis,
+    userId: string,
+    conversationId: string
+  ): Record<string, unknown> {
+    return {
+      userId,
+      userName: chat.name || chat.wa_contactName || 'Usuário',
+      message: message.text || message.content || '',
+      conversationId,
+      context: {
+        phoneNumber: chat.phone?.replace(/[^0-9]/g, '') || chat.wa_chatid?.split('@')[0] || '',
+        source: 'whatsapp',
+        messageType: classification.contentType || message.messageType,
+        chatName: chat.name || chat.wa_contactName,
+        timestamp: new Date().toISOString()
+      }
+    };
   }
 }
 
