@@ -469,15 +469,11 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           return;
         }
 
-        // ✅ WORKAROUND TEMPORÁRIO: Usar IP direto para evitar delay de DNS
-        // TODO: Investigar por que api.falachefe.app.br demora 5 minutos
-        const directEndpoint = targetEndpoint.replace('https://api.falachefe.app.br', 'http://37.27.248.13:8000');
-        
-        console.log(`🔍 [DEBUG 12] 🎯 Enviando para CrewAI (IP direto): ${directEndpoint}`);
+        console.log(`🔍 [DEBUG 12] 🎯 Enviando para CrewAI (fire-and-forget): ${targetEndpoint}`);
 
-        // ✅ SOLUÇÃO: Fire-and-forget real - não aguarda resposta
+        // ✅ Fire-and-forget real - não aguarda resposta
         // CrewAI processa e envia resposta DIRETO ao WhatsApp
-        fetch(directEndpoint, {
+        fetch(targetEndpoint, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -488,13 +484,13 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           .then(response => {
             console.log('✅ Request enviado ao CrewAI:', { 
               status: response.status,
-              endpoint: directEndpoint 
+              endpoint: targetEndpoint 
             });
           })
           .catch(error => {
             console.error('⚠️ Erro ao enviar para CrewAI (não bloqueia):', {
               error: error instanceof Error ? error.message : String(error),
-              endpoint: directEndpoint
+              endpoint: targetEndpoint
             });
           });
       } else {
