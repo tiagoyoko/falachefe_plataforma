@@ -438,7 +438,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         console.log('🔍 [DEBUG 8] Preparando processamento...');
 
         // Preparar processamento
-        const baseWorkerUrl = (process.env.CREWAI_API_URL || 'http://37.27.248.13:8000').trim();
+        const baseWorkerUrl = (process.env.CREWAI_API_URL || 'https://api.falachefe.app.br').trim();
         const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
         
         console.log('🔍 [DEBUG 9] URLs:', {
