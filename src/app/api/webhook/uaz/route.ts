@@ -469,7 +469,14 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           return;
         }
 
-        console.log(`🔍 [DEBUG 12] 🎯 Enviando para CrewAI (fire-and-forget): ${targetEndpoint}`);
+        const fetchStartTime = Date.now();
+        const fetchStartISO = new Date().toISOString();
+        
+        console.log(`🔍 [DEBUG 12] 🎯 Enviando para CrewAI (fire-and-forget):`, {
+          endpoint: targetEndpoint,
+          timestamp: fetchStartISO,
+          timestampMs: fetchStartTime
+        });
 
         // ✅ Fire-and-forget real - não aguarda resposta
         // CrewAI processa e envia resposta DIRETO ao WhatsApp
@@ -482,15 +489,27 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           body: JSON.stringify(payload),
         })
           .then(response => {
+            const fetchEndTime = Date.now();
+            const elapsed = fetchEndTime - fetchStartTime;
+            
             console.log('✅ Request enviado ao CrewAI:', { 
               status: response.status,
-              endpoint: targetEndpoint 
+              endpoint: targetEndpoint,
+              elapsedMs: elapsed,
+              elapsedSeconds: (elapsed / 1000).toFixed(2),
+              startTime: fetchStartISO,
+              endTime: new Date().toISOString()
             });
           })
           .catch(error => {
+            const fetchEndTime = Date.now();
+            const elapsed = fetchEndTime - fetchStartTime;
+            
             console.error('⚠️ Erro ao enviar para CrewAI (não bloqueia):', {
               error: error instanceof Error ? error.message : String(error),
-              endpoint: targetEndpoint
+              endpoint: targetEndpoint,
+              elapsedMs: elapsed,
+              elapsedSeconds: (elapsed / 1000).toFixed(2)
             });
           });
       } else {
