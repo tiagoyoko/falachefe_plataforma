@@ -72,6 +72,38 @@ export class MessageService {
         .replace('@c.us', '')
         .replace(/\D/g, ''); // Remove tudo que não é dígito
 
+      // ✅ CORREÇÃO: Ignorar mensagens vindas do número da plataforma
+      // Números da plataforma FalaChefe (UAZAPI)
+      const platformNumbers = ['791945151', '554791945151', '47991945151'];
+      const isPlatformSender = platformNumbers.some(num => normalizedPhone.includes(num));
+      
+      if (isPlatformSender) {
+        console.log('⏭️ Skipping: message from platform number (bot response reflection)', {
+          normalizedPhone,
+          sender: message.sender
+        });
+        
+        // Retornar sucesso sem processar (é reflexo da resposta do bot)
+        return {
+          success: true,
+          message: {
+            id: 'platform-message-ignored',
+            content: message.text || message.content || '',
+            uazMessageId: message.id || message.messageid || ''
+          },
+          conversation: {
+            id: 'no-conversation',
+            status: 'ignored'
+          },
+          user: {
+            id: 'platform',
+            name: 'Platform Bot',
+            phoneNumber: normalizedPhone,
+            isNewUser: false
+          }
+        };
+      }
+
       // 🤖 NOVO: Detectar mensagem do próprio bot (agente)
       const normalizedOwner = owner.replace(/\D/g, '');
       const isAgentMessage = normalizedPhone === normalizedOwner || message.fromMe;
