@@ -336,26 +336,14 @@ Retorne APENAS um JSON no formato:
         
         classification = json.loads(result_text)
         
-        # Adicionar respostas diretas para casos simples
-        if classification['type'] == 'greeting':
-            classification['response'] = '''Olá! 👋 Seja bem-vindo ao FalaChefe!
-
-Sou seu assistente de consultoria empresarial. Posso ajudar com:
-
-📊 **Finanças**: Fluxo de caixa, análise financeira
-📱 **Marketing**: Estratégias digitais, redes sociais  
-💰 **Vendas**: Processos comerciais, fechamento
-👥 **RH**: Gestão de pessoas, questões trabalhistas
-
-Como posso ajudar sua empresa hoje?'''
-            classification['needs_specialist'] = False
+        # ✅ CORREÇÃO: Ana deve SEMPRE processar saudações e agradecimentos
+        # Remover respostas hardcoded para permitir personalização
+        classification['response'] = None
         
-        elif classification['type'] == 'acknowledgment':
-            classification['response'] = 'Por nada! Estou aqui para ajudar. Precisa de algo mais?'
-            classification['needs_specialist'] = False
-        
+        # Ana processa: saudações, agradecimentos, mensagens gerais, continuações
+        if classification['type'] in ['greeting', 'acknowledgment', 'general', 'continuation']:
+            classification['needs_specialist'] = True  # Ana é uma especialista!
         else:
-            classification['response'] = None
             classification['needs_specialist'] = True
         
         return classification
@@ -367,15 +355,15 @@ Como posso ajudar sua empresa hoje?'''
         # Fallback: classificação básica por keywords
         message_lower = message.lower().strip()
         
-        # Saudações
+        # Saudações - Ana vai processar
         greetings = ['oi', 'olá', 'ola', 'hey', 'e aí', 'eae', 'opa', 'bom dia', 'boa tarde', 'boa noite']
         if message_lower in greetings or len(message_lower) <= 3:
             return {
                 'type': 'greeting',
-                'specialist': 'none',
+                'specialist': 'reception_agent',  # Ana
                 'confidence': 0.9,
-                'response': 'Olá! Como posso ajudar?',
-                'needs_specialist': False
+                'response': None,
+                'needs_specialist': True  # Ana vai personalizar
             }
         
         # Keywords financeiras
@@ -388,12 +376,12 @@ Como posso ajudar sua empresa hoje?'''
                 'needs_specialist': True
             }
         
-        # Default: questão geral (será tratada como não especializada)
+        # Default: questão geral - Ana faz triagem
         return {
             'type': 'general',
-            'specialist': 'none',
+            'specialist': 'reception_agent',  # Ana
             'confidence': 0.5,
-            'needs_specialist': False
+            'needs_specialist': True  # Ana vai triar
         }
 
 
