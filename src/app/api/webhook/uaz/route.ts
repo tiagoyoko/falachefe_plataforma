@@ -469,25 +469,29 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           return;
         }
 
-        console.log(`🔍 [DEBUG 12] 🎯 Chamando processMessageAsync: ${targetEndpoint}`);
+        console.log(`🔍 [DEBUG 12] 🎯 Enviando para CrewAI (fire-and-forget): ${targetEndpoint}`);
 
-        // Processar de forma assíncrona sem bloquear webhook
-        // Promise não aguardada (fire-and-forget)
-        processMessageAsync(targetEndpoint, payload, routing.destination.timeout || 120000, chat, owner, token, message.sender)
-          .then(() => {
-            console.log('🔍 [DEBUG 13] ✅ Async processing completed!');
-          })
-          .catch((error) => {
-            console.error('🔍 [DEBUG 14] ❌ Async processing failed:', {
-              error: error instanceof Error ? error.message : String(error),
-              name: error instanceof Error ? error.name : 'Unknown',
-              stack: error instanceof Error ? error.stack : undefined,
-              endpoint: targetEndpoint,
-              timeout: routing.destination.timeout || 120000
+        // ✅ SOLUÇÃO: Fire-and-forget real - não aguarda resposta
+        // CrewAI processa e envia resposta DIRETO ao WhatsApp
+        fetch(targetEndpoint, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Webhook-Source': 'uazapi',
+          },
+          body: JSON.stringify(payload),
+        })
+          .then(response => {
+            console.log('✅ Request enviado ao CrewAI:', { 
+              status: response.status,
+              endpoint: targetEndpoint 
             });
           })
-          .finally(() => {
-            console.log('🔍 [DEBUG 15] 🏁 Async processing finished (success or fail)');
+          .catch(error => {
+            console.error('⚠️ Erro ao enviar para CrewAI (não bloqueia):', {
+              error: error instanceof Error ? error.message : String(error),
+              endpoint: targetEndpoint
+            });
           });
       } else {
         console.log('⏭️ Skipping CrewAI processing (message from me)');
@@ -739,106 +743,12 @@ async function sendApprovedTemplate(
 }
 
 /**
- * Processa mensagem de forma assíncrona (fire-and-forget)
- * Não bloqueia resposta do webhook
+ * REMOVIDO: processMessageAsync
+ * 
+ * Motivo: Fetch aguardava resposta mas travava silenciosamente.
+ * Nova solução: Fire-and-forget direto no código acima.
+ * CrewAI envia resposta DIRETO ao WhatsApp (não passa pelo webhook).
+ * 
+ * Arquitetura atual:
+ * Webhook → POST CrewAI (não aguarda) → CrewAI processa → WhatsApp direto ✅
  */
-async function processMessageAsync(
-  endpoint: string,
-  payload: Record<string, unknown>,
-  timeout: number,
-  chat: UAZChat,
-  owner: string,
-  token: string,
-  sender: string
-): Promise<void> {
-  try {
-    console.log('🔍 [processMessageAsync 1] Iniciando fetch:', {
-      endpoint,
-      timeout: `${timeout}ms`,
-      payloadSize: JSON.stringify(payload).length
-    });
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutId));
-
-    console.log('🔍 [processMessageAsync 2] Resposta recebida:', {
-      status: response.status,
-      ok: response.ok
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔍 [processMessageAsync 3] Erro do CrewAI:', {
-        status: response.status,
-        text: errorText
-      });
-      throw new Error(`CrewAI returned ${response.status}: ${errorText}`);
-    }
-
-    // ✅ LER A RESPOSTA DO CREWAI
-    const data = await response.json();
-    console.log('✅ CrewAI processing succeeded:', {
-      hasResponse: !!data.response,
-      processingTime: data.metadata?.processing_time_ms || 'unknown'
-    });
-
-    // ✅ EXTRAIR A MENSAGEM DE RESPOSTA
-    const crewaiMessage = data.response || data.message || data.result || '';
-    
-    if (!crewaiMessage) {
-      console.warn('⚠️  CrewAI returned empty response');
-      return;
-    }
-
-    console.log('📨 Sending CrewAI response to WhatsApp:', {
-      messageLength: crewaiMessage.length,
-      preview: crewaiMessage.slice(0, 100)
-    });
-
-    // ✅ ENVIAR RESPOSTA PARA O WHATSAPP
-    await sendResponseToUserWithWindowValidation(
-      chat,
-      crewaiMessage,
-      owner,
-      token,
-      sender
-    );
-
-    console.log('✅ Response sent to WhatsApp successfully');
-
-  } catch (error) {
-    const errorDetails = {
-      error: error instanceof Error ? error.message : String(error),
-      name: error instanceof Error ? error.name : typeof error,
-      endpoint,
-      payload: JSON.stringify(payload).substring(0, 200),
-      isAbortError: error instanceof Error && error.name === 'AbortError',
-      isTimeoutError: error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout')),
-      isNetworkError: error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))
-    };
-    
-    console.error('❌ CrewAI processing failed:', errorDetails);
-    
-    // Enviar mensagem de erro ao usuário apenas se não for erro de timeout esperado
-    if (!errorDetails.isTimeoutError) {
-      try {
-        await sendResponseToUserWithWindowValidation(
-          chat,
-          'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
-          owner,
-          token,
-          sender
-        );
-      } catch (sendError) {
-        console.error('Failed to send error message to user:', sendError);
-      }
-    }
-  }
-}
