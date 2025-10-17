@@ -1,0 +1,139 @@
+---
+description: Arquitetura de domínios e separação de responsabilidades
+---
+# Arquitetura de Domínios - FalaChefe
+
+## 🌐 Dois Domínios Distintos
+
+### 1. falachefe.app.br (Vercel)
+**Tecnologia**: Next.js 15 + React 19  
+**Hospedagem**: Vercel  
+**Função**: Frontend + Backend API + Webhooks
+
+**Endpoints principais**:
+- `GET /` - Homepage
+- `GET /dashboard` - Dashboard
+- `GET /chat` - Chat web
+- `POST /api/webhook/uaz` - Webhook WhatsApp
+- `POST /api/auth/*` - Autenticação
+- `POST /api/financial/crewai` - API financeira (a criar)
+
+**Variáveis**:
+```bash
+NEXT_PUBLIC_APP_URL=https://falachefe.app.br
+CREWAI_API_URL=https://api.falachefe.app.br  # ⚠️ Com "api."
+```
+
+### 2. api.falachefe.app.br (Hetzner)
+**Tecnologia**: Python + CrewAI + Flask  
+**Hospedagem**: Hetzner (Docker Swarm + Traefik)  
+**IP**: 37.27.248.13  
+**Função**: Processamento IA (Agentes CrewAI)
+
+**Endpoints principais**:
+- `GET /health` - Health check
+- `POST /process` - Processar mensagem texto
+- `POST /process-audio` - Processar áudio
+- `POST /process-image` - Processar imagem
+- `GET /metrics` - Métricas Prometheus
+
+**Variáveis**:
+```bash
+FALACHEFE_API_URL=https://falachefe.app.br  # ⚠️ SEM "api."
+OPENAI_API_KEY=***
+```
+
+## 🔄 Fluxo de Comunicação
+
+```
+WhatsApp → UAZAPI
+    ↓
+Webhook: https://falachefe.app.br/api/webhook/uaz (Vercel)
+    ↓
+MessageRouter valida usuário e empresa
+    ↓
+HTTP POST: https://api.falachefe.app.br/process (Hetzner)
+    ↓
+CrewAI processa (agentes especializados)
+    ↓
+Resposta → Vercel
+    ↓
+Envio para WhatsApp via UAZAPI
+    ↓
+WhatsApp → Usuário
+```
+
+## ⚙️ Configurações por Ambiente
+
+### DNS
+
+| Registro | Tipo | Valor | TTL |
+|----------|------|-------|-----|
+| `falachefe.app.br` | CNAME | `cname.vercel-dns.com` | 3600 |
+| `api.falachefe.app.br` | A | `37.27.248.13` | 3600 |
+
+### SSL/TLS
+
+| Domínio | Provedor | Status |
+|---------|----------|--------|
+| `falachefe.app.br` | Vercel (auto) | ✅ |
+| `api.falachefe.app.br` | Let's Encrypt (Traefik) | ✅ |
+
+### Deploy
+
+**Vercel (automático)**:
+```bash
+git push origin master  # Auto-deploy
+```
+
+**Hetzner (manual)**:
+```bash
+ssh root@37.27.248.13
+cd /opt/falachefe-crewai
+docker build -t falachefe-crewai:latest .
+docker service update --image falachefe-crewai:latest falachefe_crewai-api
+```
+
+## 🚨 Erros Comuns
+
+### ❌ URL errada no código
+
+```typescript
+// ERRADO
+const url = 'https://falachefe.app.br/process'  // Missing "api."
+
+// CERTO
+const url = 'https://api.falachefe.app.br/process'
+```
+
+### ❌ Variável de ambiente errada
+
+```bash
+# ERRADO - No Vercel
+CREWAI_API_URL=https://falachefe.app.br  # Missing "api."
+
+# CERTO
+CREWAI_API_URL=https://api.falachefe.app.br
+```
+
+### ❌ Confundir endpoints
+
+```typescript
+// ERRADO - CrewAI chamar próprio domínio
+const url = process.env.CREWAI_API_URL  // ❌ api.falachefe.app.br
+
+// CERTO - CrewAI chamar Vercel
+const url = process.env.FALACHEFE_API_URL  // ✅ falachefe.app.br
+```
+
+## 📋 Checklist de Validação
+
+Ao fazer mudanças que envolvem comunicação entre domínios:
+
+- [ ] URL está correta? (`api.` ou não?)
+- [ ] Variável de ambiente está correta?
+- [ ] CORS permite o domínio?
+- [ ] Token de autenticação está configurado?
+- [ ] Testou com `curl` manual?
+
+Veja [ARQUITETURA-DOMINIOS.md](mdc:ARQUITETURA-DOMINIOS.md) para detalhes completos.

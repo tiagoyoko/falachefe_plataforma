@@ -374,6 +374,13 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
     }
 
       // ✨ Verificar se usuário precisa cadastrar empresa
+      console.log('🔍 [DEBUG 1] Verificação de empresa:', {
+        requiresCompanySetup: result.requiresCompanySetup,
+        hasStandardMessage: !!result.standardMessage,
+        userId: result.user.id,
+        userName: result.user.name
+      });
+      
       if (result.requiresCompanySetup && result.standardMessage) {
         console.log('📧 Enviando mensagem padrão: usuário precisa cadastrar empresa');
         
@@ -391,11 +398,16 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
         }
         
         // Não processar com CrewAI
+        console.log('🔍 [DEBUG 2] BLOQUEADO: requiresCompanySetup = true');
         return;
       }
+      
+      console.log('🔍 [DEBUG 3] Prosseguindo para routing...');
 
       // Rotear mensagem baseado no tipo
       if (!message.fromMe) {
+        console.log('🔍 [DEBUG 4] message.fromMe = false, chamando MessageRouter...');
+        
         // Classificar e rotear mensagem
         const routing = await MessageRouter.route(
           processedMessage, 
@@ -403,7 +415,7 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           process.env.CREWAI_API_URL || 'https://falachefe.app.br'
         );
 
-        console.log('📍 Message Routing:', {
+        console.log('🔍 [DEBUG 5] Message Routing:', {
           type: routing.classification.contentType,
           destination: routing.classification.destination,
           shouldProcess: routing.shouldProcess,
@@ -413,19 +425,27 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
 
         // Se não deve processar, ignorar
         if (!routing.shouldProcess) {
-          console.log(`⏭️ Skipping message: ${routing.reason}`);
+          console.log(`🔍 [DEBUG 6] BLOQUEADO: shouldProcess = false, reason: ${routing.reason}`);
           return;
         }
 
         // Ignorar tipos específicos
         if (routing.classification.destination === MessageDestination.IGNORE) {
-          console.log(`🚫 Message type ignored: ${routing.classification.contentType}`);
+          console.log(`🔍 [DEBUG 7] BLOQUEADO: destination = IGNORE, type: ${routing.classification.contentType}`);
           return;
         }
+        
+        console.log('🔍 [DEBUG 8] Preparando processamento...');
 
         // Preparar processamento
         const baseWorkerUrl = (process.env.CREWAI_API_URL || 'http://37.27.248.13:8000').trim();
         const targetEndpoint = `${baseWorkerUrl}${routing.destination.endpoint}`;
+        
+        console.log('🔍 [DEBUG 9] URLs:', {
+          baseWorkerUrl,
+          endpoint: routing.destination.endpoint,
+          targetEndpoint
+        });
         
         const payload = MessageRouter.preparePayload(
           processedMessage,
@@ -434,25 +454,34 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           result.user.id,
           result.conversation.id
         );
+        
+        console.log('🔍 [DEBUG 10] Payload preparado:', {
+          hasUserId: !!payload.userId,
+          hasMessage: !!payload.message,
+          payloadKeys: Object.keys(payload)
+        });
 
         // Processar mensagem de forma assíncrona (fire-and-forget)
         console.log('🚀 Processing message asynchronously...');
         
         if (!baseWorkerUrl) {
-          console.error('❌ Worker URL not configured');
+          console.error('🔍 [DEBUG 11] ❌ BLOQUEADO: Worker URL not configured');
           return;
         }
 
-        console.log(`🎯 Target: ${targetEndpoint} (${routing.destination.description})`);
+        console.log(`🔍 [DEBUG 12] 🎯 Chamando processMessageAsync: ${targetEndpoint}`);
 
         // Processar de forma assíncrona sem bloquear webhook
         // Promise não aguardada (fire-and-forget)
         processMessageAsync(targetEndpoint, payload, routing.destination.timeout || 120000, chat, owner, token, message.sender)
           .then(() => {
-            console.log('✅ Async processing completed');
+            console.log('🔍 [DEBUG 13] ✅ Async processing completed!');
           })
           .catch((error) => {
-            console.error('❌ Async processing failed:', error);
+            console.error('🔍 [DEBUG 14] ❌ Async processing failed:', {
+              error: error.message,
+              stack: error.stack
+            });
           });
       } else {
         console.log('⏭️ Skipping CrewAI processing (message from me)');
@@ -717,9 +746,10 @@ async function processMessageAsync(
   sender: string
 ): Promise<void> {
   try {
-    console.log('📤 Sending request to CrewAI:', {
+    console.log('🔍 [processMessageAsync 1] Iniciando fetch:', {
       endpoint,
       timeout: `${timeout}ms`,
+      payloadSize: JSON.stringify(payload).length
     });
 
     const response = await fetch(endpoint, {
@@ -729,8 +759,18 @@ async function processMessageAsync(
       signal: AbortSignal.timeout(timeout),
     });
 
+    console.log('🔍 [processMessageAsync 2] Resposta recebida:', {
+      status: response.status,
+      ok: response.ok
+    });
+
     if (!response.ok) {
-      throw new Error(`CrewAI returned ${response.status}: ${await response.text()}`);
+      const errorText = await response.text();
+      console.error('🔍 [processMessageAsync 3] Erro do CrewAI:', {
+        status: response.status,
+        text: errorText
+      });
+      throw new Error(`CrewAI returned ${response.status}: ${errorText}`);
     }
 
     // ✅ LER A RESPOSTA DO CREWAI

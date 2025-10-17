@@ -1,0 +1,255 @@
+---
+globs: *.ts,*.tsx,*.js,*.py
+description: Padrões de logging e observabilidade
+---
+# Padrões de Logging - FalaChefe
+
+## 🎯 Objetivo
+
+Logs devem permitir **debug rápido** e **rastreamento completo** de operações.
+
+## 📝 Formato Padrão (TypeScript/JavaScript)
+
+### Estrutura de Log
+
+```typescript
+console.log('🔵 [Componente] Ação:', {
+  dados: 'relevantes',
+  contexto: 'necessário',
+  timestamp: new Date().toISOString()
+});
+```
+
+### Emojis por Tipo
+
+| Emoji | Tipo | Uso |
+|-------|------|-----|
+| 🔵 | Info | Início de operação |
+| ✅ | Success | Operação bem-sucedida |
+| ⚠️  | Warning | Algo inesperado mas não crítico |
+| ❌ | Error | Erro que precisa atenção |
+| 📤 | Request | Envio de request HTTP |
+| 📥 | Response | Recebimento de response |
+| 💾 | Database | Operação de banco de dados |
+| 🔐 | Auth | Autenticação/Autorização |
+| 🪟 | Business | Lógica de negócio |
+
+### Exemplos Práticos
+
+#### ✅ BOM - Request HTTP
+
+```typescript
+console.log('📤 Sending request to CrewAI:', {
+  endpoint: 'https://api.falachefe.app.br/process',
+  timeout: '180000ms',
+  payloadSize: JSON.stringify(payload).length,
+  userId: payload.userId
+});
+
+const response = await fetch(endpoint, options);
+
+console.log('📥 CrewAI response received:', {
+  status: response.status,
+  ok: response.ok,
+  processingTime: Date.now() - startTime
+});
+
+const data = await response.json();
+
+console.log('✅ Processing succeeded:', {
+  hasResponse: !!data.response,
+  responseLength: data.response?.length,
+  metadata: data.metadata
+});
+```
+
+#### ✅ BOM - Operação de Banco
+
+```typescript
+console.log('💾 Saving message to database:', {
+  conversationId,
+  userId,
+  messageLength: content.length
+});
+
+const result = await db.execute(sql`...`);
+
+console.log('✅ Message saved:', {
+  messageId: result[0].id,
+  conversationId,
+  timestamp: result[0].created_at
+});
+```
+
+#### ✅ BOM - Error Handling
+
+```typescript
+try {
+  // operação
+} catch (error) {
+  console.error('❌ Operation failed:', {
+    operation: 'processMessage',
+    error: error instanceof Error ? error.message : 'Unknown',
+    context: {
+      userId,
+      messageId,
+      timestamp: new Date().toISOString()
+    },
+    stack: error instanceof Error ? error.stack : undefined
+  });
+  
+  // Re-lançar ou tratar
+}
+```
+
+#### ❌ RUIM - Log Vago
+
+```typescript
+// ❌ Não faça isso
+console.log('Processing...');
+console.log('Done');
+console.log('Error:', error);
+```
+
+## 🐍 Formato Python
+
+### Estrutura
+
+```python
+import logging
+from datetime import datetime
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+
+# Log com contexto
+logger.info('📤 Sending to OpenAI', extra={
+    'user_id': user_id,
+    'message_length': len(message),
+    'model': 'gpt-4o-mini'
+})
+
+logger.info('✅ OpenAI response received', extra={
+    'tokens': response.usage.total_tokens,
+    'processing_time_ms': processing_time
+})
+```
+
+## 🔍 Rastreamento de Operações
+
+### IDs de Rastreamento
+
+```typescript
+// Gerar ID único para operação
+const operationId = `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+console.log('🔵 [Operation Start]:', {
+  operationId,
+  type: 'process_message',
+  userId,
+  timestamp: new Date().toISOString()
+});
+
+// Incluir operationId em TODOS os logs relacionados
+console.log('📤 Sending to CrewAI:', { operationId, endpoint });
+console.log('✅ Operation completed:', { operationId, duration });
+```
+
+### Contexto Sempre Presente
+
+Incluir **SEMPRE**:
+- `userId` ou `companyId` (quem)
+- `messageId` ou `conversationId` (o quê)
+- `timestamp` (quando)
+- `operationId` (rastreamento)
+
+## 📊 Níveis de Log
+
+| Nível | Quando Usar |
+|-------|-------------|
+| **DEBUG** | Detalhes internos (desenvolvimento) |
+| **INFO** | Operações normais (produção) |
+| **WARN** | Algo inesperado mas recuperável |
+| **ERROR** | Erro que precisa atenção |
+
+### Configuração por Ambiente
+
+```typescript
+// .env.local (dev)
+LOG_LEVEL=debug
+
+// .env.production
+LOG_LEVEL=info
+```
+
+## 🚫 O Que NÃO Logar
+
+❌ **Nunca** logar:
+- Senhas ou tokens completos
+- Dados sensíveis de cartão
+- PII sem mascaramento
+
+✅ **Use**:
+```typescript
+// ❌ RUIM
+console.log('Token:', process.env.UAZAPI_TOKEN);
+
+// ✅ BOM
+console.log('Token:', `***${process.env.UAZAPI_TOKEN?.slice(-4)}`);
+```
+
+## 📈 Monitoramento
+
+### Logs que Facilitam Debug
+
+```typescript
+// Início do fluxo
+console.log('🔵 [Webhook] Received:', {
+  eventType,
+  messageId,
+  from,
+  timestamp
+});
+
+// Validações
+console.log('🔐 [Auth] User validated:', { userId, hasCompany });
+
+// Processamento
+console.log('📤 [CrewAI] Request sent:', { endpoint, timeout });
+console.log('📥 [CrewAI] Response:', { status, processingTime });
+
+// Finalização
+console.log('✅ [Webhook] Completed:', {
+  messageId,
+  totalTime,
+  responseSent: true
+});
+```
+
+### Busca Eficiente
+
+Logs bem estruturados permitem:
+
+```bash
+# Buscar por usuário
+vercel logs | grep "userId.*or3ZL1Ea1Pm7wFhufyFaRs7y2ZLKLQNb"
+
+# Buscar por operação
+vercel logs | grep "operationId.*msg-1697280000000"
+
+# Buscar erros
+vercel logs | grep "❌"
+```
+
+## ✅ Checklist de Log
+
+Antes de commit, garantir que código tem:
+
+- [ ] Log no início da operação
+- [ ] Log de dados importantes (mascarados se sensíveis)
+- [ ] Log de resultado/sucesso
+- [ ] Log de erros com contexto completo
+- [ ] IDs de rastreamento quando aplicável
+- [ ] Timestamps em operações longas
+
+Veja exemplos em [route.ts](mdc:src/app/api/webhook/uaz/route.ts) (função `processMessageAsync`).

@@ -288,3 +288,4 @@ npm run dev
 **Status**: 🟢 Funcional (parcial) - Aguardando implementação endpoint financeiro  
 **Próxima Ação**: Criar `/api/financial/crewai`
 
+

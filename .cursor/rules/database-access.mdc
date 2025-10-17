@@ -1,22 +1,19 @@
 ---
-alwaysApply: false
 description: Usar Supabase MCP para consultas ao banco de dados
 ---
+# Database Access - Usar Supabase MCP
 
-# Database Access - Supabase MCP
+## 🎯 Regra Principal
 
-## Sempre Use Supabase MCP para Consultas
+**SEMPRE** use Supabase MCP para consultas ao banco de dados ao investigar problemas ou validar dados.
 
-Quando precisar consultar ou modificar o banco de dados, use **Supabase MCP** ao invés de terminal ou SQL direto.
+## 🔧 Configuração
 
-## Informações do Projeto
+**Project ID**: `zpdartuyaergbxmbmtur`  
+**Region**: `sa-east-1`  
+**Schemas**: `public`
 
-- **Project ID**: `zpdartuyaergbxmbmtur`
-- **Region**: `sa-east-1` (São Paulo)
-- **Host**: `db.zpdartuyaergbxmbmtur.supabase.co`
-- **Schema**: `public`
-
-## Comandos Úteis
+## 📋 Comandos Úteis
 
 ### Listar Tabelas
 
@@ -27,16 +24,16 @@ await mcp_supabase_list_tables({
 });
 ```
 
-### Executar SQL
+### Executar Query
 
 ```typescript
 await mcp_supabase_execute_sql({
   project_id: "zpdartuyaergbxmbmtur",
   query: `
-    SELECT id, name, email, phone_number
+    SELECT id, name, phone_number
     FROM user_onboarding
-    WHERE whatsapp_phone LIKE '%11994066248%'
-    LIMIT 10;
+    WHERE whatsapp_phone LIKE '%992345329%'
+    LIMIT 5
   `
 });
 ```
@@ -50,79 +47,171 @@ await mcp_supabase_get_logs({
 });
 ```
 
-## Tabelas Principais
+## 🗄️ Tabelas Principais
 
-### Usuários e Autenticação
-- `user` - Usuários da plataforma (Better Auth)
-- `account` - Contas OAuth
-- `session` - Sessões ativas
-- `user_onboarding` - Dados de cadastro
+| Tabela | Uso |
+|--------|-----|
+| `user_onboarding` | Usuários que fizeram cadastro |
+| `user_subscriptions` | Relação usuário ↔ empresa |
+| `companies` | Empresas clientes |
+| `conversations` | Conversações WhatsApp |
+| `messages` | Mensagens trocadas |
+| `agent_memories` | Memória dos agentes |
+| `cashflow_transactions` | Transações financeiras (a criar) |
 
-### Empresas e Assinaturas
-- `companies` - Empresas clientes
-- `subscription_plans` - Planos disponíveis
-- `user_subscriptions` - Relação usuário ↔ empresa
-
-### WhatsApp
-- `conversations` - Conversações
-- `messages` - Mensagens
-
-### CrewAI
-- `agent_memories` - Memória dos agentes
-- `conversation_contexts` - Contextos
-- `user_memory_profiles` - Perfis de usuário
-
-## Queries Comuns
+## 🔍 Queries Comuns
 
 ### Buscar Usuário por Telefone
 
 ```sql
-SELECT u.id, u.user_id, u.first_name, u.last_name, u.whatsapp_phone
-FROM user_onboarding u
-WHERE u.whatsapp_phone LIKE '%994066248%';
+SELECT 
+  uo.user_id,
+  uo.first_name,
+  uo.last_name,
+  uo.whatsapp_phone,
+  us.company_id,
+  us.status as subscription_status
+FROM user_onboarding uo
+LEFT JOIN user_subscriptions us ON uo.user_id = us.user_id
+WHERE uo.whatsapp_phone LIKE '%992345329%'
 ```
 
-### Verificar Subscription
+### Verificar Conversações Recentes
 
 ```sql
-SELECT us.id, us.user_id, us.company_id, c.name as company_name
-FROM user_subscriptions us
-JOIN companies c ON c.id = us.company_id
-WHERE us.user_id = 'xxx'
-  AND us.status = 'active';
+SELECT 
+  c.id,
+  c.user_id,
+  c.status,
+  c.created_at,
+  COUNT(m.id) as message_count
+FROM conversations c
+LEFT JOIN messages m ON c.id = m.conversation_id
+WHERE c.created_at > NOW() - INTERVAL '24 hours'
+GROUP BY c.id
+ORDER BY c.created_at DESC
+LIMIT 10
 ```
 
-### Listar Empresas
+### Transações Financeiras (após criar tabela)
 
 ```sql
-SELECT id, name, domain, uaz_token, subscription_plan, is_active
-FROM companies
-ORDER BY created_at DESC
-LIMIT 10;
+SELECT 
+  id,
+  user_id,
+  type,
+  amount,
+  category,
+  description,
+  date,
+  created_at
+FROM cashflow_transactions
+WHERE user_id = 'or3ZL1Ea1Pm7wFhufyFaRs7y2ZLKLQNb'
+ORDER BY date DESC
+LIMIT 20
 ```
 
-## ⚠️ Cuidados
+## ⚠️ Segurança
 
-1. **Nunca** expor dados sensíveis nos logs
-2. **Sempre** usar prepared statements (SQL templates)
-3. **Validar** resultados antes de usar
-4. **Tratar** erros graciosamente
-5. **Documentar** queries complexas
+### ✅ BOM
 
-## Relacionamento Usuário → Empresa
-
-```
-user_onboarding (cadastro na plataforma)
-    ↓ user_id
-user_subscriptions (assinatura)
-    ↓ company_id
-companies (empresa)
+```typescript
+// Usar prepared statements via MCP
+await mcp_supabase_execute_sql({
+  project_id: "zpdartuyaergbxmbmtur",
+  query: `
+    SELECT * FROM users 
+    WHERE phone = $1
+  `,
+  params: [phoneNumber]
+});
 ```
 
-**Importante**: Usuário pode ter cadastro mas **sem subscription** (sem empresa).
+### ❌ RUIM
 
-## Exemplo Real
+```typescript
+// SQL Injection vulnerability
+const query = `SELECT * FROM users WHERE phone = '${phoneNumber}'`;
+```
 
-Ver implementação em:
-- [src/services/message-service.ts](mdc:src/services/message-service.ts)
-- Método: `checkPlatformUserWithoutCompany()`
+## 🔄 Workflow de Investigação
+
+Ao investigar problemas:
+
+1. **Listar tabelas** disponíveis
+2. **Executar query** para buscar dados
+3. **Analisar** resultados
+4. **Validar** se dados batem com logs da aplicação
+
+### Exemplo Completo
+
+```typescript
+// 1. Listar tabelas
+const tables = await mcp_supabase_list_tables({
+  project_id: "zpdartuyaergbxmbmtur",
+  schemas: ["public"]
+});
+
+// 2. Buscar dados do usuário
+const user = await mcp_supabase_execute_sql({
+  project_id: "zpdartuyaergbxmbmtur",
+  query: `
+    SELECT * FROM user_onboarding
+    WHERE whatsapp_phone LIKE '%992345329%'
+  `
+});
+
+// 3. Verificar empresa
+if (user.length > 0) {
+  const subscription = await mcp_supabase_execute_sql({
+    project_id: "zpdartuyaergbxmbmtur",
+    query: `
+      SELECT * FROM user_subscriptions
+      WHERE user_id = '${user[0].user_id}'
+        AND status = 'active'
+    `
+  });
+  
+  console.log('User has company:', subscription.length > 0);
+}
+```
+
+## 📊 Migrations
+
+Para criar novas tabelas, use migrations:
+
+```sql
+-- Migration: YYYYMMDD_description.sql
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS my_table (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_my_table_user_id ON my_table(user_id);
+
+COMMIT;
+```
+
+Aplicar via MCP:
+
+```typescript
+await mcp_supabase_apply_migration({
+  project_id: "zpdartuyaergbxmbmtur",
+  name: "create_my_table",
+  query: `/* SQL da migration */`
+});
+```
+
+## ✅ Checklist
+
+Ao usar banco de dados:
+
+- [ ] Usar Supabase MCP (não SQL direto)
+- [ ] Validar dados antes de inserir
+- [ ] Usar prepared statements
+- [ ] Não expor dados sensíveis em logs
+- [ ] Criar índices para queries frequentes
+- [ ] Documentar schema de novas tabelas

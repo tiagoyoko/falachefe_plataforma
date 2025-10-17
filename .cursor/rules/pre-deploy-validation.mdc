@@ -1,0 +1,139 @@
+---
+description: Checklist de validação obrigatório antes de deploy em produção
+---
+# Checklist Pré-Deploy - FalaChefe
+
+## 🚨 OBRIGATÓRIO Antes de Deploy
+
+### Etapa 1: Diagnóstico de Produção
+
+```bash
+./scripts/diagnose-production.sh
+```
+
+**Se score < 80%**: Investigar falhas ANTES de deploy.
+
+### Etapa 2: Qualidade de Código
+
+```bash
+# Lint (sem erros)
+npm run lint
+
+# TypeScript (sem erros)
+npm run build
+```
+
+**Ambos devem passar 100%** antes de continuar.
+
+### Etapa 3: Teste Local
+
+```bash
+npm run dev
+```
+
+**Validar**:
+- [ ] Aplicação inicia sem erros
+- [ ] Logs não mostram warnings críticos
+- [ ] Funcionalidade testada manualmente
+
+### Etapa 4: Variáveis de Ambiente
+
+**Vercel (.env.local)**:
+```bash
+CREWAI_API_URL=https://api.falachefe.app.br  # ✅ Com "api."
+UAZAPI_TOKEN=***
+CREWAI_SERVICE_TOKEN=***
+```
+
+**Hetzner (.env)**:
+```bash
+FALACHEFE_API_URL=https://falachefe.app.br  # ✅ SEM "api."
+OPENAI_API_KEY=***
+```
+
+### Etapa 5: Commit Message
+
+**Formato**:
+```
+<type>: <descrição curta>
+
+PROBLEMA:
+- Descrição do problema
+
+SOLUÇÃO:
+- O que foi feito
+
+IMPACTO:
+- Antes: X
+- Depois: Y
+```
+
+**Types**: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`
+
+### Etapa 6: Deploy
+
+```bash
+# Push (aciona deploy automático Vercel)
+git push origin master
+
+# OU usar GitHub MCP
+mcp_github_create_or_update_file(...)
+```
+
+### Etapa 7: Validação Pós-Deploy
+
+**Aguardar 2-3 minutos**, depois:
+
+```bash
+# 1. Verificar deploy Vercel
+# https://vercel.com/tiagoyoko/falachefe-plataforma/deployments
+
+# 2. Testar endpoint
+curl https://falachefe.app.br/api/health
+
+# 3. Verificar logs
+vercel logs --follow
+
+# 4. Teste real via WhatsApp
+# Enviar mensagem e verificar resposta
+```
+
+## ❌ NÃO Deploy Se
+
+- [ ] Diagnóstico falhou
+- [ ] Lint tem erros
+- [ ] Build falhou
+- [ ] Não testou localmente
+- [ ] Não sabe o que a mudança faz
+- [ ] É sexta à noite 😅
+
+## ✅ Deploy APENAS Se
+
+- [x] Todos os checks passaram
+- [x] Código revisado
+- [x] Impacto conhecido
+- [x] Rollback plan existe
+- [x] Horário adequado
+
+## 🔄 Rollback Plan
+
+Se deploy quebrar:
+
+```bash
+# 1. Via Vercel Dashboard
+# Deployments → Último estável → "Promote to Production"
+
+# 2. Via Git
+git revert HEAD
+git push origin master
+```
+
+## 📊 Métricas de Sucesso
+
+**Acompanhar**:
+- Taxa de deploys bem-sucedidos: > 95%
+- Tempo médio de deploy: < 5 min
+- Rollbacks: < 5%
+- Erros em produção: < 1%
+
+Veja [diagnose-production.sh](mdc:scripts/diagnose-production.sh) para mais detalhes.

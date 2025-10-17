@@ -209,3 +209,4 @@ Leo: ✅ Transação Registrada com Sucesso no Banco de Dados!
 **Status Atual**: 🟡 Aguardando verificação de token de produção
 **Próximo Passo**: Verificar `CREWAI_SERVICE_TOKEN` no Vercel Dashboard
 
+

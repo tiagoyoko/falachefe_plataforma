@@ -1,0 +1,85 @@
+---
+alwaysApply: true
+---
+# Sistema de Prevenção de Erros - FalaChefe
+
+## 🎯 Regra de Ouro
+
+**SEMPRE diagnostique ANTES de mudar código. NUNCA assuma onde está o problema.**
+
+## 📋 Checklist Obrigatório Antes de Qualquer Mudança
+
+### 1. Diagnóstico PRIMEIRO
+
+```bash
+# Execute isto ANTES de mudar qualquer código
+./scripts/diagnose-production.sh
+```
+
+**Não pule este passo!** O script verifica:
+- DNS (Vercel + API)
+- SSL/HTTPS
+- Endpoints ativos
+- Processamento real
+
+### 2. Identificar Camada do Problema
+
+| Camada | Se falhar | Ação |
+|--------|-----------|------|
+| **DNS** | `dig api.falachefe.app.br` retorna vazio | Configurar DNS, **NÃO mexer em código** |
+| **SSL** | Certificado inválido/expirado | Verificar Traefik/Let's Encrypt |
+| **Network** | `curl https://api...` timeout | Verificar servidor Hetzner (SSH) |
+| **Application** | Endpoint retorna erro | Ver logs Docker/Vercel |
+| **Code** | Logs mostram erro de lógica | **SÓ AQUI** mexer em código |
+
+### 3. Logs Detalhados
+
+**SEMPRE** adicione logs em:
+- ✅ Início de operação
+- ✅ Dados recebidos/enviados
+- ✅ Resultado da operação
+- ✅ Erros (com contexto)
+
+**Formato preferido**:
+```typescript
+console.log('🔵 [Ação]:', { dados, contexto });
+console.log('✅ [Sucesso]:', { resultado, tempo });
+console.log('❌ [Erro]:', { erro, contexto });
+```
+
+### 4. Validação Pré-Deploy
+
+```bash
+# Execute SEMPRE antes de commit/deploy:
+npm run lint
+npm run build
+./scripts/diagnose-production.sh  # Validar que produção está OK
+```
+
+## ⚠️ Sinais de Alerta
+
+**NÃO faça mudanças se**:
+- ❌ Não executou diagnóstico
+- ❌ Não sabe qual camada tem problema
+- ❌ Está "tentando algo para ver se funciona"
+- ❌ Mudou mesma coisa 2+ vezes sem sucesso
+
+**Pare e investigue mais!**
+
+## 📚 Recursos
+
+Quando algo der errado:
+1. Execute [diagnose-production.sh](mdc:scripts/diagnose-production.sh)
+2. Leia [LESSONS-LEARNED.md](mdc:docs/quality/LESSONS-LEARNED.md)
+3. Crie Post-Mortem se erro persistir
+
+## 🔄 Ciclo Correto
+
+```
+Erro → Diagnóstico → Identificar Camada → Planejar Fix → Implementar → Validar → Documentar
+```
+
+**NUNCA**:
+```
+Erro → Mudar Código → Testar → Repetir
+```

@@ -436,3 +436,4 @@ Esperado: Leo usa GetCashflowBalanceTool e retorna saldo
 **Responsável**: Time de Desenvolvimento  
 **Última Atualização**: 14/10/2025 11:45
 
+

@@ -331,6 +331,62 @@ export class MessageRouter {
   }
 
   /**
+   * Roteia mensagem para o processador correto
+   * 
+   * @param message - Mensagem UAZAPI
+   * @param chat - Chat UAZAPI
+   * @param baseUrl - URL base do servidor CrewAI
+   * @returns Configuração de roteamento
+   */
+  static async route(
+    message: UAZMessage,
+    chat: UAZChat,
+    baseUrl: string
+  ): Promise<{
+    shouldProcess: boolean;
+    reason?: string;
+    classification: MessageAnalysis;
+    destination: {
+      endpoint: string;
+      timeout: number;
+    };
+  }> {
+    // 1. Validar se deve processar
+    const validationResult = this.shouldProcess(message);
+    
+    if (!validationResult.shouldProcess) {
+      const classification = this.analyzeMessage(message);
+      return {
+        shouldProcess: false,
+        reason: validationResult.reason,
+        classification,
+        destination: { endpoint: '', timeout: 0 }
+      };
+    }
+    
+    // 2. Classificar mensagem
+    const classification = this.analyzeMessage(message);
+    
+    // 3. Obter endpoint de processamento
+    const processingConfig = this.getProcessingEndpoint(classification);
+    
+    // 4. Construir endpoint completo
+    const fullEndpoint = processingConfig.endpoint === 'local' 
+      ? 'local'
+      : `${baseUrl.trim()}${processingConfig.endpoint}`;
+    
+    // 5. Retornar configuração de roteamento
+    return {
+      shouldProcess: true,
+      classification,
+      destination: {
+        endpoint: fullEndpoint,
+        timeout: (processingConfig.config.timeout as number) || 120000
+      }
+    };
+  }
+
+  /**
    * Prepara payload para enviar ao CrewAI
    */
   static preparePayload(
@@ -340,13 +396,16 @@ export class MessageRouter {
     userId: string,
     conversationId: string
   ): Record<string, unknown> {
+    // Extrair phoneNumber limpo
+    const phoneNumber = chat.phone?.replace(/[^0-9]/g, '') || chat.wa_chatid?.split('@')[0] || '';
+    
     return {
       userId,
       userName: chat.name || chat.wa_contactName || 'Usuário',
+      phoneNumber,  // ✅ Agora no nível raiz como CrewAI espera
       message: message.text || message.content || '',
       conversationId,
       context: {
-        phoneNumber: chat.phone?.replace(/[^0-9]/g, '') || chat.wa_chatid?.split('@')[0] || '',
         source: 'whatsapp',
         messageType: classification.contentType || message.messageType,
         chatName: chat.name || chat.wa_contactName,

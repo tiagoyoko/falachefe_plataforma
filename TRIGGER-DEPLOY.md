@@ -26,3 +26,4 @@ CREWAI_SERVICE_TOKEN=e096742e-7b6d-4b6a-b987-41d533adbd50
 
 Este arquivo serve apenas para trigger de deploy via git push.
 
+
