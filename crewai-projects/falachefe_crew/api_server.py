@@ -722,7 +722,8 @@ Contato: {user_company_data['user_name']} ({user_company_data['user_role']})"""
             response_text = str(result)
         
         # Salvar mensagem do agente no banco de dados
-        conversation_id = context.get('conversationId', f'conv_{user_id}_{int(time())}')
+        # conversationId vem no nível raiz do payload, não em context
+        conversation_id = data.get('conversationId') or context.get('conversationId', f'conv_{user_id}_{int(time())}')
         agent_id = specialist_type if 'specialist_type' in locals() else 'crewai'
         
         save_agent_message(
