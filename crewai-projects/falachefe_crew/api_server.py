@@ -366,8 +366,13 @@ Retorne APENAS um JSON no formato:
                 'needs_specialist': True  # Ana vai personalizar
             }
         
-        # Keywords financeiras
-        financial_kw = ['fluxo de caixa', 'receita', 'despesa', 'financeiro', 'dinheiro', 'reais', 'lucro', 'prejuízo']
+        # Keywords financeiras (ampliado para detectar mais variações)
+        financial_kw = [
+            'fluxo de caixa', 'receita', 'despesa', 'financeiro', 'dinheiro', 
+            'reais', 'lucro', 'prejuízo', 'saldo', 'pagar', 'receber', 
+            'faturamento', 'custos', 'gastos', 'investimento', 'capital',
+            'balanço', 'resultado', 'transação', 'pagamento', 'cobrança'
+        ]
         if any(kw in message_lower for kw in financial_kw):
             return {
                 'type': 'financial_task',
