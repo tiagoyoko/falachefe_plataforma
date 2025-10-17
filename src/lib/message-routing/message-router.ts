@@ -4,6 +4,7 @@
  */
 
 import { UAZMessage, UAZChat } from '@/lib/uaz-api/types';
+import { MessageDestination } from '@/lib/message-router/types';
 
 export type MessageContentType = 
   | 'text_only'           // Apenas texto
@@ -26,7 +27,7 @@ export interface MessageAnalysis {
   hasMedia: boolean;
   mediaType: string | null;
   messageType: string;
-  destination: string;
+  destination: MessageDestination;  // ✅ Agora usa enum correto!
   processingPriority: 'high' | 'normal' | 'low';
   requiresSpecialHandling: boolean;
 }
@@ -42,7 +43,7 @@ export class MessageRouter {
     const messageType = message.messageType || message.type || '';
     
     let contentType: MessageContentType = 'unknown';
-    let destination = 'crewai'; // Destino padrão
+    let destination: MessageDestination = MessageDestination.CREWAI_TEXT; // Destino padrão
     let processingPriority: 'high' | 'normal' | 'low' = 'normal';
     let requiresSpecialHandling = false;
 
@@ -53,7 +54,7 @@ export class MessageRouter {
       case 'text':
       case 'extendedtextmessage':
         contentType = 'text_only';
-        destination = 'crewai';
+        destination = MessageDestination.CREWAI_TEXT;
         processingPriority = 'high';
         break;
 
@@ -61,7 +62,7 @@ export class MessageRouter {
       case 'imagemessage':
       case 'image':
         contentType = hasText ? 'text_with_image' : 'image_only';
-        destination = hasText ? 'crewai-vision' : 'image-analyzer';
+        destination = MessageDestination.CREWAI_MEDIA;
         requiresSpecialHandling = true;
         break;
 
@@ -70,7 +71,7 @@ export class MessageRouter {
       case 'audio':
       case 'ptt': // Push to Talk (áudio de voz)
         contentType = hasText ? 'text_with_audio' : 'audio_only';
-        destination = hasText ? 'crewai-audio' : 'audio-transcriber';
+        destination = MessageDestination.CREWAI_AUDIO;
         requiresSpecialHandling = true;
         processingPriority = 'high';
         break;
@@ -79,7 +80,7 @@ export class MessageRouter {
       case 'documentmessage':
       case 'document':
         contentType = hasText ? 'text_with_document' : 'document_only';
-        destination = hasText ? 'crewai-document' : 'document-analyzer';
+        destination = MessageDestination.CREWAI_DOCUMENT;
         requiresSpecialHandling = true;
         break;
 
@@ -87,7 +88,7 @@ export class MessageRouter {
       case 'videomessage':
       case 'video':
         contentType = hasText ? 'text_with_video' : 'video_only';
-        destination = hasText ? 'crewai-video' : 'video-analyzer';
+        destination = MessageDestination.CREWAI_MEDIA;
         requiresSpecialHandling = true;
         processingPriority = 'low';
         break;
@@ -96,7 +97,7 @@ export class MessageRouter {
       case 'stickermessage':
       case 'sticker':
         contentType = 'sticker';
-        destination = 'auto-reply'; // Resposta automática simples
+        destination = MessageDestination.IGNORE;
         processingPriority = 'low';
         break;
 
@@ -104,7 +105,7 @@ export class MessageRouter {
       case 'locationmessage':
       case 'location':
         contentType = 'location';
-        destination = 'location-handler';
+        destination = MessageDestination.IGNORE;
         break;
 
       // Contato
@@ -112,7 +113,7 @@ export class MessageRouter {
       case 'contact':
       case 'contactsmessage':
         contentType = 'contact';
-        destination = 'contact-handler';
+        destination = MessageDestination.IGNORE;
         break;
 
       // Padrão
@@ -120,11 +121,11 @@ export class MessageRouter {
         // Se tem texto, processar como texto
         if (hasText) {
           contentType = 'text_only';
-          destination = 'crewai';
+          destination = MessageDestination.CREWAI_TEXT;
           processingPriority = 'normal';
         } else {
           contentType = 'unknown';
-          destination = 'fallback';
+          destination = MessageDestination.IGNORE;
           requiresSpecialHandling = true;
         }
     }
