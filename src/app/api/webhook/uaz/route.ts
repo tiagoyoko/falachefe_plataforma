@@ -479,9 +479,15 @@ async function handleMessageEvent(data: { message: UAZMessage; chat: UAZChat; ow
           })
           .catch((error) => {
             console.error('🔍 [DEBUG 14] ❌ Async processing failed:', {
-              error: error.message,
-              stack: error.stack
+              error: error instanceof Error ? error.message : String(error),
+              name: error instanceof Error ? error.name : 'Unknown',
+              stack: error instanceof Error ? error.stack : undefined,
+              endpoint: targetEndpoint,
+              timeout: routing.destination.timeout || 120000
             });
+          })
+          .finally(() => {
+            console.log('🔍 [DEBUG 15] 🏁 Async processing finished (success or fail)');
           });
       } else {
         console.log('⏭️ Skipping CrewAI processing (message from me)');
@@ -752,12 +758,15 @@ async function processMessageAsync(
       payloadSize: JSON.stringify(payload).length
     });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(timeout),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
 
     console.log('🔍 [processMessageAsync 2] Resposta recebida:', {
       status: response.status,
@@ -805,19 +814,31 @@ async function processMessageAsync(
     console.log('✅ Response sent to WhatsApp successfully');
 
   } catch (error) {
-    console.error('❌ CrewAI processing failed:', error);
+    const errorDetails = {
+      error: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : typeof error,
+      endpoint,
+      payload: JSON.stringify(payload).substring(0, 200),
+      isAbortError: error instanceof Error && error.name === 'AbortError',
+      isTimeoutError: error instanceof Error && (error.name === 'TimeoutError' || error.message.includes('timeout')),
+      isNetworkError: error instanceof Error && (error.message.includes('fetch') || error.message.includes('network'))
+    };
     
-    // Enviar mensagem de erro ao usuário
-    try {
-      await sendResponseToUserWithWindowValidation(
-        chat,
-        'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
-        owner,
-        token,
-        sender
-      );
-    } catch (sendError) {
-      console.error('Failed to send error message to user:', sendError);
+    console.error('❌ CrewAI processing failed:', errorDetails);
+    
+    // Enviar mensagem de erro ao usuário apenas se não for erro de timeout esperado
+    if (!errorDetails.isTimeoutError) {
+      try {
+        await sendResponseToUserWithWindowValidation(
+          chat,
+          'Desculpe, estou com dificuldades técnicas no momento. Por favor, tente novamente em alguns instantes.',
+          owner,
+          token,
+          sender
+        );
+      } catch (sendError) {
+        console.error('Failed to send error message to user:', sendError);
+      }
     }
   }
 }
